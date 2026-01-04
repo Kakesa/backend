@@ -2,6 +2,7 @@ const User = require('../users/users.model');
 const School = require('../schools/school.model');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { sendActivationEmail } = require('../../services/email.service');
 
 /* =====================================================
    HELPERS
@@ -18,9 +19,6 @@ const generateToken = (user) => {
 
 const normalizeEmail = (email) => email.trim().toLowerCase();
 
-/* =====================================================
-   GENERATE ACTIVATION TOKEN
-===================================================== */
 const generateActivationToken = () => {
   const token = crypto.randomBytes(20).toString('hex');
   const expires = Date.now() + 24 * 60 * 60 * 1000; // 24h
@@ -33,9 +31,7 @@ const generateActivationToken = () => {
 const register = async (data) => {
   const { name, email, phone, password, role = 'user', permissions, schoolData } = data;
 
-  if (!name || !email || !password) {
-    throw new Error('Champs obligatoires manquants');
-  }
+  if (!name || !email || !password) throw new Error('Champs obligatoires manquants');
 
   const emailNormalized = normalizeEmail(email);
   const existingUser = await User.findOne({ email: emailNormalized });
@@ -43,7 +39,7 @@ const register = async (data) => {
 
   const safeRole = role === 'admin' ? 'admin' : 'user';
 
-  // 🔹 Générer token d’activation
+  // Générer token d’activation
   const { token: activationToken, expires: activationExpires } = generateActivationToken();
 
   const user = new User({
@@ -53,14 +49,14 @@ const register = async (data) => {
     password,
     role: safeRole,
     permissions: Array.isArray(permissions) ? permissions : [],
-    isActive: false, // 🔹 inactif jusqu'à activation
+    isActive: false,
     activationToken,
     activationExpires,
   });
 
   await user.save();
 
-  // ✅ Création automatique d’école pour un admin
+  // Création automatique d’école pour un admin
   let school = null;
   if (safeRole === 'admin' && schoolData) {
     school = new School({ ...schoolData, admin: user._id });
@@ -69,6 +65,9 @@ const register = async (data) => {
     user.school = school._id;
     await user.save();
   }
+
+  // 🔹 Envoi email d'activation (async pour ne pas bloquer)
+  sendActivationEmail(user.email, activationToken, user.name).catch(console.error);
 
   return {
     user: {
@@ -79,7 +78,7 @@ const register = async (data) => {
       permissions: user.permissions,
       isActive: user.isActive,
     },
-    activationToken, // 🔹 à envoyer par email
+    activationToken,
     school,
   };
 };
@@ -146,7 +145,7 @@ const login = async ({ email, password }) => {
 };
 
 /* =====================================================
-   GET ALL USERS (ADMIN)
+   GET ALL USERS
 ===================================================== */
 const getAllUsers = async (page = 1, limit = 10) => {
   const safePage = Math.max(1, page);
@@ -191,9 +190,6 @@ const deleteUser = async (userId) => {
   await user.deleteOne();
 };
 
-/* =====================================================
-   EXPORTS
-===================================================== */
 module.exports = {
   register,
   activateAccount,

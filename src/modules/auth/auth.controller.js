@@ -2,22 +2,13 @@ const authService = require('./auth.service');
 const User = require('../users/users.model');
 const { createAudit } = require('../audit/audit.service');
 
-/* =====================================================
-   REGISTER
-===================================================== */
 const register = async (req, res, next) => {
   try {
-    const { user, activationToken, school } = await authService.register(req.body);
-
-    // 🔹 Ici, envoie email avec activationToken via Nodemailer / service email
-    // Ex: sendActivationEmail(user.email, activationToken);
+    const { user, school } = await authService.register(req.body);
 
     res.status(201).json({
       success: true,
-      data: {
-        user,
-        school, // 🏫 école créée automatiquement si admin
-      },
+      data: { user, school },
       message: 'Compte créé, vérifiez votre email pour l’activation',
     });
   } catch (err) {
@@ -25,13 +16,9 @@ const register = async (req, res, next) => {
   }
 };
 
-/* =====================================================
-   ACTIVATE ACCOUNT
-===================================================== */
 const activateAccount = async (req, res, next) => {
   try {
     const { token } = req.params;
-
     const { token: jwtToken, user } = await authService.activateAccount(token);
 
     res.status(200).json({
@@ -44,28 +31,19 @@ const activateAccount = async (req, res, next) => {
   }
 };
 
-/* =====================================================
-   LOGIN
-===================================================== */
 const login = async (req, res, next) => {
   try {
     const { token, user } = await authService.login(req.body);
 
     res.status(200).json({
       success: true,
-      data: {
-        token,
-        user,
-      },
+      data: { token, user },
     });
   } catch (err) {
     next(err);
   }
 };
 
-/* =====================================================
-   GET ALL USERS (ADMIN)
-===================================================== */
 const getAllUsers = async (req, res, next) => {
   try {
     const page = Number(req.query.page) || 1;
@@ -83,90 +61,37 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
-/* =====================================================
-   UPDATE PERMISSIONS
-===================================================== */
 const updatePermissions = async (req, res, next) => {
   try {
     const before = await User.findById(req.params.id).lean();
+    if (!before) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
 
-    if (!before) {
-      return res.status(404).json({
-        success: false,
-        message: 'Utilisateur introuvable',
-      });
-    }
+    const user = await authService.updatePermissions(req.params.id, req.body.permissions);
 
-    const user = await authService.updatePermissions(
-      req.params.id,
-      req.body.permissions
-    );
+    await createAudit({ req, action: 'UPDATE_PERMISSIONS', target: { type: 'User', id: user._id }, before, after: user });
 
-    await createAudit({
-      req,
-      action: 'UPDATE_PERMISSIONS',
-      target: { type: 'User', id: user._id },
-      before,
-      after: user,
-    });
-
-    res.status(200).json({
-      success: true,
-      data: user,
-    });
+    res.status(200).json({ success: true, data: user });
   } catch (err) {
     next(err);
   }
 };
 
-/* =====================================================
-   DELETE USER
-===================================================== */
 const deleteUser = async (req, res, next) => {
   try {
-    if (req.user && req.user._id.toString() === req.params.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous ne pouvez pas vous supprimer vous-même',
-      });
-    }
+    if (req.user && req.user._id.toString() === req.params.id)
+      return res.status(403).json({ success: false, message: 'Vous ne pouvez pas vous supprimer vous-même' });
 
     const before = await User.findById(req.params.id).lean();
-
-    if (!before) {
-      return res.status(404).json({
-        success: false,
-        message: 'Utilisateur introuvable',
-      });
-    }
+    if (!before) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
 
     await authService.deleteUser(req.params.id);
 
-    await createAudit({
-      req,
-      action: 'DELETE_USER',
-      target: { type: 'User', id: req.params.id },
-      before,
-      after: null,
-    });
+    await createAudit({ req, action: 'DELETE_USER', target: { type: 'User', id: req.params.id }, before, after: null });
 
-    res.status(200).json({
-      success: true,
-      message: 'Utilisateur supprimé avec succès',
-    });
+    res.status(200).json({ success: true, message: 'Utilisateur supprimé avec succès' });
   } catch (err) {
     next(err);
   }
 };
 
-/* =====================================================
-   EXPORTS
-===================================================== */
-module.exports = {
-  register,
-  activateAccount, // 🔹 nouveau
-  login,
-  getAllUsers,
-  updatePermissions,
-  deleteUser,
-};
+module.exports = { register, activateAccount, login, getAllUsers, updatePermissions, deleteUser };
