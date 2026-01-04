@@ -39,6 +39,25 @@ const schoolSchema = new mongoose.Schema(
       required: true,
       default: "2026-2027", // tu peux adapter
     },
+    types: {
+      type: [String],
+      default: [],
+    },
+    country: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    city: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+    },
 
     // Relations
     users: [
