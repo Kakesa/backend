@@ -6,27 +6,11 @@ const bcrypt = require('bcryptjs');
 ===================================================== */
 const permissionSchema = new mongoose.Schema(
   {
-    module: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    create: {
-      type: Boolean,
-      default: false,
-    },
-    read: {
-      type: Boolean,
-      default: false,
-    },
-    update: {
-      type: Boolean,
-      default: false,
-    },
-    delete: {
-      type: Boolean,
-      default: false,
-    },
+    module: { type: String, required: true, trim: true },
+    create: { type: Boolean, default: false },
+    read: { type: Boolean, default: false },
+    update: { type: Boolean, default: false },
+    delete: { type: Boolean, default: false },
   },
   { _id: false }
 );
@@ -36,55 +20,23 @@ const permissionSchema = new mongoose.Schema(
 ===================================================== */
 const userSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+    name: { type: String, required: true, trim: true },
 
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-      index: true,
-    },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
 
-    phone: {
-      type: String,
-      trim: true,
-      default: '',
-    },
+    phone: { type: String, trim: true, default: '' },
 
-    password: {
-      type: String,
-      required: true,
-      select: false, // 🔒 jamais exposé dans les réponses
-    },
+    password: { type: String, required: true, select: false },
 
-    role: {
-      type: String,
-      enum: ['admin', 'teacher', 'student', 'parent'],
-      default: 'student',
-      index: true,
-    },
+    role: { type: String, enum: ['admin', 'teacher', 'student', 'parent'], default: 'student', index: true },
 
-    permissions: {
-      type: [permissionSchema],
-      default: [],
-    },
+    permissions: { type: [permissionSchema], default: [] },
 
-    school: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'School',
-      default: null,
-    },
+    school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', default: null },
 
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
+    isActive: { type: Boolean, default: false }, // 🔹 inactif par défaut, activation par mail
+    activationToken: { type: String },           // 🔹 token d’activation
+    activationExpires: { type: Date },           // 🔹 expiration du token
   },
   {
     timestamps: true,
@@ -95,30 +47,19 @@ const userSchema = new mongoose.Schema(
 /* =====================================================
    HASH PASSWORD (AVANT SAVE)
 ===================================================== */
-userSchema.pre('save', async function (next) {
-  try {
-    // ⚠️ Ne pas re-hasher si le mot de passe n’a pas changé
-    if (!this.isModified('password')) {
-      return next();
-    }
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return; // ne fait rien si mot de passe pas modifié
 
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-
-    next();
-  } catch (error) {
-    next(error);
-  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
+
 
 /* =====================================================
    COMPARE PASSWORD
 ===================================================== */
 userSchema.methods.comparePassword = async function (candidatePassword) {
-  if (!candidatePassword || !this.password) {
-    return false;
-  }
-
+  if (!candidatePassword || !this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 

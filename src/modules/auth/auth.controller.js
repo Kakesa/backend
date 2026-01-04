@@ -7,14 +7,37 @@ const { createAudit } = require('../audit/audit.service');
 ===================================================== */
 const register = async (req, res, next) => {
   try {
-    const { token, user } = await authService.register(req.body);
+    const { user, activationToken, school } = await authService.register(req.body);
+
+    // 🔹 Ici, envoie email avec activationToken via Nodemailer / service email
+    // Ex: sendActivationEmail(user.email, activationToken);
 
     res.status(201).json({
       success: true,
       data: {
-        token,
         user,
+        school, // 🏫 école créée automatiquement si admin
       },
+      message: 'Compte créé, vérifiez votre email pour l’activation',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   ACTIVATE ACCOUNT
+===================================================== */
+const activateAccount = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+
+    const { token: jwtToken, user } = await authService.activateAccount(token);
+
+    res.status(200).json({
+      success: true,
+      data: { token: jwtToken, user },
+      message: 'Compte activé avec succès',
     });
   } catch (err) {
     next(err);
@@ -61,7 +84,7 @@ const getAllUsers = async (req, res, next) => {
 };
 
 /* =====================================================
-   UPDATE PERMISSIONS (ADMIN)
+   UPDATE PERMISSIONS
 ===================================================== */
 const updatePermissions = async (req, res, next) => {
   try {
@@ -97,11 +120,10 @@ const updatePermissions = async (req, res, next) => {
 };
 
 /* =====================================================
-   DELETE USER (ADMIN)
+   DELETE USER
 ===================================================== */
 const deleteUser = async (req, res, next) => {
   try {
-    // 🚫 Empêcher un utilisateur de se supprimer lui-même
     if (req.user && req.user._id.toString() === req.params.id) {
       return res.status(403).json({
         success: false,
@@ -142,6 +164,7 @@ const deleteUser = async (req, res, next) => {
 ===================================================== */
 module.exports = {
   register,
+  activateAccount, // 🔹 nouveau
   login,
   getAllUsers,
   updatePermissions,

@@ -3,6 +3,7 @@ const router = express.Router();
 
 const {
   register,
+  activateAccount,
   login,
   getAllUsers,
   updatePermissions,
@@ -15,17 +16,19 @@ const { protect } = require('../../middlewares/auth.middleware');
 const { restrictTo } = require('../../middlewares/role.middleware');
 const { checkPermission } = require('../../middlewares/permission.middleware');
 
-// AUTH
+// ======================================
+// AUTH ROUTES
+// ======================================
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
 
+// ✅ Activation compte (GET)
+router.get('/activate/:token', activateAccount);
+
+// ======================================
 // USERS (ADMIN)
-router.get(
-  '/users',
-  protect,
-  restrictTo('admin'),
-  getAllUsers
-);
+// ======================================
+router.get('/users', protect, restrictTo('admin'), getAllUsers);
 
 router.put(
   '/users/:id/permissions',
