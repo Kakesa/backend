@@ -4,6 +4,7 @@ require('dotenv').config();
 
 const connectDB = require('./config/database');
 const routes = require('./routes');
+const { errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
 
@@ -11,14 +12,14 @@ const app = express();
 connectDB();
 
 // 🔹 CORS
-// app.use(
-//   cors({
-//     origin: 'http://localhost:8080',
-//     credentials: true,
-//     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-//     allowedHeaders: ['Content-Type', 'Authorization'],
-//   })
-// );
+app.use(
+  cors({
+    origin: 'http://localhost:8080',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 // 🔹 Parser JSON uniquement pour les requêtes application/json
 // ⚠️ Les routes multipart/form-data ne passeront pas ici
