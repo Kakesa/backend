@@ -1,4 +1,4 @@
-# HK Events Backend
+# Backend
 
 <!-- Auteur info -->
 name: Espoir Kakesa
