@@ -1,4 +1,4 @@
-# Backend
+# Backend School Management System
 
 <!-- Auteur info -->
 name: Espoir Kakesa
