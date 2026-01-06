@@ -3,7 +3,8 @@ const router = express.Router();
 
 const {
   register,
-  activateAccount,
+  activateWithOTP,
+  resendOTP,
   login,
   getAllUsers,
   updatePermissions,
@@ -23,7 +24,10 @@ router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
 
 // ✅ Activation compte (GET)
-router.get('/activate/:token', activateAccount);
+router.post('/activate-otp', activateWithOTP);
+router.post('/resend-otp', resendOTP);
+
+
 
 // ======================================
 // USERS (ADMIN)

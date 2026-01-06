@@ -34,9 +34,14 @@ const userSchema = new mongoose.Schema(
 
     school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', default: null },
 
-    isActive: { type: Boolean, default: false }, // 🔹 inactif par défaut, activation par mail
-    activationToken: { type: String },           // 🔹 token d’activation
-    activationExpires: { type: Date },           // 🔹 expiration du token
+    /* =========================
+       ACTIVATION / OTP
+    ========================== */
+    isActive: { type: Boolean, default: false },
+
+    otpCode: { type: String, select: false },       // 🔐 jamais exposé
+    otpExpires: { type: Date, select: false },     // 🔐 jamais exposé
+    otpAttempts: { type: Number, default: 0 },     // nombre de tentatives pour limiter
   },
   {
     timestamps: true,
@@ -48,7 +53,7 @@ const userSchema = new mongoose.Schema(
    HASH PASSWORD (AVANT SAVE)
 ===================================================== */
 userSchema.pre('save', async function () {
-  if (!this.isModified('password')) return; // ne fait rien si mot de passe pas modifié
+  if (!this.isModified('password') || !this.password) return;
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);

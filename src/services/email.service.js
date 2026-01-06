@@ -17,22 +17,19 @@ const transporter = nodemailer.createTransport({
  * @param {string} token token d’activation
  *  @param {string} name nom de l’utilisateur pour saluer
  */
-const sendActivationEmail = async (to, token, name) => {
-  const activationLink = `${process.env.FRONTEND_URL}/activate/${token}`;
-
-  const mailOptions = {
-    from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_USER}>`,
+const sendActivationEmail = async (to, code, name) => {
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
     to,
-    subject: 'Active ton compte',
+    subject: 'Code de vérification',
     html: `
-      <h2>Bienvenue ${name}!</h2>
-      <p>Merci de t’être inscrit. Clique sur le lien ci-dessous pour activer ton compte :</p>
-      <a href="${activationLink}">Activer mon compte</a>
-      <p>Ce lien expire dans 24h.</p>
+      <p>Bonjour ${name},</p>
+      <p>Voici votre code d’activation :</p>
+      <h2>${code}</h2>
+      <p>Ce code expire dans 10 minutes.</p>
     `,
-  };
-
-  await transporter.sendMail(mailOptions);
+  });
 };
+
 
 module.exports = { sendActivationEmail };
