@@ -1,25 +1,64 @@
 const School = require('./school.model');
+const User = require('../users/users.model');
+const { generateSchoolCode } = require('./school.utils');
 
 /* =====================================================
    CREATE SCHOOL
 ===================================================== */
 const createSchool = async (data) => {
-  const school = new School(data);
-  await school.save();
+  const adminId = data.admin;
+
+  // 🔐 Vérifier si l'admin a déjà une école
+  const admin = await User.findById(adminId);
+  if (!admin) throw new Error("Administrateur introuvable");
+
+  if (admin.needsSchoolSetup === false) {
+    throw new Error("École déjà configurée pour cet administrateur");
+  }
+
+  // 🔢 Génération du code
+  const code = await generateSchoolCode();
+
+  //  Création école
+  const school = await School.create({
+    ...data,
+    code,
+    users: [adminId],
+  });
+
+  // 🔗 Lier User ↔ School
+  admin.school = school._id;
+  admin.needsSchoolSetup = false;
+  await admin.save();
+
   return school;
 };
 
 /* =====================================================
-   GET ALL SCHOOLS
+   GET ALL SCHOOLS (RBAC + MULTI-ÉTABLISSEMENTS)
 ===================================================== */
-const getAllSchools = async (page = 1, limit = 10) => {
+const getAllSchools = async (user, page = 1, limit = 10) => {
   const safePage = Math.max(1, page);
   const safeLimit = Math.max(1, limit);
   const skip = (safePage - 1) * safeLimit;
 
+  let filter = {};
+
+  // 🔐 ADMIN → seulement son école
+  if (user.role !== "superadmin") {
+    if (!user.school) {
+      throw new Error("Aucune école associée à cet utilisateur");
+    }
+    filter = { _id: user.school };
+  }
+
   const [schools, total] = await Promise.all([
-    School.find().skip(skip).limit(safeLimit).sort({ createdAt: -1 }).populate('admin', 'name email'),
-    School.countDocuments(),
+    School.find(filter)
+      .skip(skip)
+      .limit(safeLimit)
+      .sort({ createdAt: -1 })
+      .populate("admin", "name email"),
+    School.countDocuments(filter),
   ]);
 
   return {
@@ -32,6 +71,7 @@ const getAllSchools = async (page = 1, limit = 10) => {
     },
   };
 };
+
 
 /* =====================================================
    GET SCHOOL BY ID

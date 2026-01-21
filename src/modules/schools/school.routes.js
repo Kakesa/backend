@@ -11,18 +11,25 @@ const {
 
 const { protect } = require('../../middlewares/auth.middleware');
 const { restrictTo } = require('../../middlewares/role.middleware');
+const { schoolSetup } = require('../../middlewares/schoolSetup.middleware');
+const { schoolScope } = require('../../middlewares/schoolScope.middleware');
 
 // 🔹 Toutes les routes sont protégées
 router.use(protect);
 
 // GET /schools
-router.get('/', restrictTo('admin'), getAllSchools);
+router.get(
+  "/",
+  restrictTo("superadmin", "admin"),
+  schoolScope,
+  getAllSchools
+);
 
 // GET /schools/:id
 router.get('/:id', restrictTo('admin'), getSchoolById);
 
 // POST /schools
-router.post('/', restrictTo('admin'), createSchool);
+router.post('/', restrictTo('admin'), schoolSetup, createSchool);
 
 // PUT /schools/:id
 router.put('/:id', restrictTo('admin'), updateSchool);

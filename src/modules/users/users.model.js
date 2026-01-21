@@ -28,12 +28,16 @@ const userSchema = new mongoose.Schema(
 
     password: { type: String, required: true, select: false },
 
-    role: { type: String, enum: ['admin', 'teacher', 'student', 'parent'], default: 'student', index: true },
+    role: { type: String, enum: ['super-admin', 'admin', 'teacher', 'student', 'parent'], default: 'student', index: true },
 
     permissions: { type: [permissionSchema], default: [] },
 
     school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', default: null },
 
+    needsSchoolSetup: {
+      type: Boolean,
+      default: false,
+    },
     /* =========================
        ACTIVATION / OTP
     ========================== */

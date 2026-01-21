@@ -7,12 +7,12 @@ const { createAudit } = require('../audit/audit.service');
 ===================================================== */
 const register = async (req, res, next) => {
   try {
-    const { user, school } = await authService.register(req.body);
+    const { user, school, message } = await authService.register(req.body);
 
     res.status(201).json({
       success: true,
       data: { user, school },
-      message: 'Compte créé, vérifiez votre email (code OTP)',
+      message,
     });
   } catch (err) {
     next(err);
@@ -29,6 +29,7 @@ const activateWithOTP = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: result.message,
+      token: result.token,
     });
   } catch (err) {
     next(err);
@@ -38,7 +39,6 @@ const activateWithOTP = async (req, res, next) => {
 /* =====================================================
    RESEND OTP
 ===================================================== */
-
 const resendOTP = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -97,9 +97,7 @@ const getAllUsers = async (req, res, next) => {
 const updatePermissions = async (req, res, next) => {
   try {
     const before = await User.findById(req.params.id).lean();
-    if (!before) {
-      return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
-    }
+    if (!before) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
 
     const user = await authService.updatePermissions(req.params.id, req.body.permissions);
 
@@ -130,9 +128,7 @@ const deleteUser = async (req, res, next) => {
     }
 
     const before = await User.findById(req.params.id).lean();
-    if (!before) {
-      return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
-    }
+    if (!before) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
 
     await authService.deleteUser(req.params.id);
 
@@ -153,9 +149,6 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-/* =====================================================
-   EXPORTS
-===================================================== */
 module.exports = {
   register,
   activateWithOTP,
