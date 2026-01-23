@@ -41,7 +41,7 @@ const register = async (data) => {
     password,
     role: safeRole,
     isActive: false,
-    needsSchoolSetup: safeRole === 'admin',
+    needsSchoolSetup: safeRole === 'admin', // true si admin
     otpCode,
     otpExpires,
     otpAttempts: 0,
@@ -49,15 +49,11 @@ const register = async (data) => {
 
   await user.save();
 
-  // 🔹 Création école si admin et schoolData fourni
   let school = null;
-  if (safeRole === 'admin') {
-    if (!schoolData || !schoolData.name || !schoolData.academicYear) {
-      throw new Error("Les informations de l'école (name, academicYear) sont requises pour l'admin");
-    }
 
+  // 🔹 Si admin ET que schoolData fourni, création immédiate de l'école
+  if (safeRole === 'admin' && schoolData && schoolData.name && schoolData.academicYear) {
     const code = await generateSchoolCode();
-
     school = new School({
       ...schoolData,
       admin: user._id,
@@ -82,7 +78,7 @@ const register = async (data) => {
       role: user.role,
       isActive: user.isActive,
       school: user.school,
-      needsSchoolSetup: user.needsSchoolSetup,
+      needsSchoolSetup: user.needsSchoolSetup, // true si admin n'a pas encore créé l'école
     },
     school,
     message: 'Compte créé et code OTP envoyé',
