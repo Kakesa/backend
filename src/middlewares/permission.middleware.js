@@ -1,8 +1,8 @@
 const checkPermission = (module, action) => {
   return (req, res, next) => {
 
-    // 🔥 ADMIN = accès total
-    if (req.user.role === 'admin') {
+    // 🔥 SUPERADMIN = accès total
+    if (req.user.role === 'super-admin') {
       return next();
     }
 

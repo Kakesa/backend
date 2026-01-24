@@ -28,24 +28,25 @@ const userSchema = new mongoose.Schema(
 
     password: { type: String, required: true, select: false },
 
-    role: { type: String, enum: ['super-admin', 'admin', 'teacher', 'student', 'parent'], default: 'student', index: true },
+    role: { type: String, enum: ['superadmin', 'admin', 'teacher', 'student', 'parent'], default: 'student', index: true },
 
     permissions: { type: [permissionSchema], default: [] },
 
     school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', default: null },
 
-    needsSchoolSetup: {
-      type: Boolean,
-      default: false,
-    },
+    needsSchoolSetup: { type: Boolean, default: false },
+
     /* =========================
        ACTIVATION / OTP
     ========================== */
     isActive: { type: Boolean, default: false },
 
-    otpCode: { type: String, select: false },       // 🔐 jamais exposé
-    otpExpires: { type: Date, select: false },     // 🔐 jamais exposé
-    otpAttempts: { type: Number, default: 0 },     // nombre de tentatives pour limiter
+    otp: {
+      code: { type: String, select: false },
+      expiresAt: { type: Date, select: false },
+    },
+
+    otpAttempts: { type: Number, default: 0 },
   },
   {
     timestamps: true,
@@ -62,7 +63,6 @@ userSchema.pre('save', async function () {
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
-
 
 /* =====================================================
    COMPARE PASSWORD

@@ -3,16 +3,15 @@ const User = require('../users/users.model');
 const { createAudit } = require('../audit/audit.service');
 
 /* =====================================================
-   REGISTER
+   REGISTER — Étape 1
 ===================================================== */
 const register = async (req, res, next) => {
   try {
-    const { user, school, message } = await authService.register(req.body);
+    await authService.register(req.body);
 
     res.status(201).json({
       success: true,
-      data: { user, school },
-      message,
+      message: 'Compte créé. Un code OTP a été envoyé par email.',
     });
   } catch (err) {
     next(err);
@@ -20,9 +19,9 @@ const register = async (req, res, next) => {
 };
 
 /* =====================================================
-   ACTIVATE ACCOUNT WITH OTP
+   ACTIVATE ACCOUNT WITH OTP — Étape 2
 ===================================================== */
-const activateWithOTP = async (req, res, next) => {
+const activateAccountWithOTP = async (req, res, next) => {
   try {
     const result = await authService.activateAccountWithOTP(req.body);
 
@@ -30,6 +29,7 @@ const activateWithOTP = async (req, res, next) => {
       success: true,
       message: result.message,
       token: result.token,
+      user: result.user,
     });
   } catch (err) {
     next(err);
@@ -65,6 +65,47 @@ const login = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: { token, user },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   CREATE SCHOOL — Étape 3 (ADMIN)
+===================================================== */
+const createSchool = async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ success: false, message: 'Nom de l’école requis' });
+
+    const result = await authService.createSchool(req.user._id, { name });
+
+    res.status(201).json({
+      success: true,
+      message: result.message,
+      schoolCode: result.schoolCode,
+      school: result.school,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   JOIN SCHOOL WITH CODE — Étape 4
+===================================================== */
+const joinSchoolWithCode = async (req, res, next) => {
+  try {
+    const { schoolCode } = req.body;
+    if (!schoolCode) return res.status(400).json({ success: false, message: 'Code école requis' });
+
+    const result = await authService.joinSchoolWithCode(req.user._id, schoolCode);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      schoolId: result.schoolId,
     });
   } catch (err) {
     next(err);
@@ -151,9 +192,11 @@ const deleteUser = async (req, res, next) => {
 
 module.exports = {
   register,
-  activateWithOTP,
+  activateAccountWithOTP,
   resendOTP,
   login,
+  createSchool,
+  joinSchoolWithCode,
   getAllUsers,
   updatePermissions,
   deleteUser,

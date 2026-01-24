@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 
 module.exports = async () => {
   try {
-    const exists = await User.findOne({ role: "super-admin" });
+    const exists = await User.findOne({ role: "superadmin" });
     if (exists) {
       // console.log("✅ Superadmin déjà existant");
       return;
@@ -15,7 +15,7 @@ module.exports = async () => {
       name: "Super Admin",
       email: "superadmin@edugestion.com",
       password,
-      role: "super-admin",
+      role: "superadmin",
       isActive: true,
       needsSchoolSetup: false,
     });
