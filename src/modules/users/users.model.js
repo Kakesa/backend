@@ -22,17 +22,38 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
 
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
 
-    phone: { type: String, trim: true, default: '' },
+    phone: { type: String, default: '', trim: true },
 
-    password: { type: String, required: true, select: false },
+    password: {
+      type: String,
+      required: true,
+      select: false,
+      minlength: 6,
+    },
 
-    role: { type: String, enum: ['superadmin', 'admin', 'teacher', 'student', 'parent'], default: 'student', index: true },
+    role: {
+      type: String,
+      enum: ['superadmin', 'admin', 'teacher', 'student', 'parent'],
+      default: 'student',
+      index: true,
+    },
 
     permissions: { type: [permissionSchema], default: [] },
 
-    school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', default: null },
+    school: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'School',
+      default: null,
+    },
 
     needsSchoolSetup: { type: Boolean, default: false },
 
@@ -41,12 +62,21 @@ const userSchema = new mongoose.Schema(
     ========================== */
     isActive: { type: Boolean, default: false },
 
-    otp: {
-      code: { type: String, select: false },
-      expiresAt: { type: Date, select: false },
+    otpCode: {
+      type: String,
+      select: false,
+      trim: true,
     },
 
-    otpAttempts: { type: Number, default: 0 },
+    otpExpires: {
+      type: Date,
+      select: false,
+    },
+
+    otpAttempts: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
@@ -55,14 +85,16 @@ const userSchema = new mongoose.Schema(
 );
 
 /* =====================================================
-   HASH PASSWORD (AVANT SAVE)
+   HASH PASSWORD (IMPORTANT)
 ===================================================== */
 userSchema.pre('save', async function () {
-  if (!this.isModified('password') || !this.password) return;
+  // 🔒 hash SEULEMENT si le password change
+  if (!this.isModified('password')) return;
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
+
 
 /* =====================================================
    COMPARE PASSWORD
@@ -72,7 +104,4 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-/* =====================================================
-   EXPORT
-===================================================== */
 module.exports = mongoose.model('User', userSchema);

@@ -64,7 +64,7 @@ app.post('/api/test-upload', upload.single('logo'), (req, res) => {
 });
 
 // 🔹 Routes principales
-routes(app, upload); // si tu veux utiliser multer dans tes routes
+routes(app); // si tu veux utiliser multer dans tes routes
 
 // 🔹 Middleware de gestion des erreurs
 app.use(errorHandler);

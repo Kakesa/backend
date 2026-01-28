@@ -20,12 +20,10 @@ const createSchool = async (data, file) => {
   // 🔹 Si fichier logo présent → on le sauvegarde
   let logoPath = null;
   if (file) {
-    const ext = path.extname(file.originalname);
-    const fileName = `school-${Date.now()}${ext}`;
-    const filePath = path.join(__dirname, '../../uploads', fileName);
-    fs.writeFileSync(filePath, file.buffer);
-    logoPath = `/uploads/${fileName}`;
+    // file.path contient le chemin complet sur le serveur
+    logoPath = `/uploads/${path.basename(file.path)}`;
   }
+
 
   // Création école
   const school = await School.create({

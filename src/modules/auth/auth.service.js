@@ -5,10 +5,12 @@ const School = require('../schools/school.model');
 const { sendActivationEmail } = require('../../services/email.service');
 
 const OTP_EXPIRATION_MINUTES = 10;
+const MAX_OTP_ATTEMPTS = 5;
 
 /* ================= HELPERS ================= */
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
-const generateSchoolCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+const generateSchoolCode = () =>
+  Math.random().toString(36).substring(2, 8).toUpperCase();
 
 const signToken = (user) =>
   jwt.sign(
@@ -18,7 +20,7 @@ const signToken = (user) =>
   );
 
 /* =====================================================
-   REGISTER (Étape 1)
+   REGISTER
 ===================================================== */
 const register = async ({ email, password, name }) => {
   const existing = await User.findOne({ email });
@@ -30,7 +32,7 @@ const register = async ({ email, password, name }) => {
   const user = await User.create({
     email,
     name,
-    password,
+    password, // ⚠️ hashé via pre('save') dans le model
     role: 'student',
     isActive: false,
     otpCode,
@@ -38,23 +40,30 @@ const register = async ({ email, password, name }) => {
     otpAttempts: 0,
   });
 
-  await sendActivationEmail(user.email, otpCode, user.name);
+  try {
+    await sendActivationEmail(user.email, otpCode, user.name);
+  } catch (err) {
+    console.error('📧 OTP non envoyé :', err.message);
+  }
 
-  return { message: 'Compte créé. Un code OTP a été envoyé par email.' };
+  return { message: 'Compte créé. Code OTP envoyé.' };
 };
 
 /* =====================================================
-   ACTIVATE ACCOUNT WITH OTP (Étape 2)
+   ACTIVATE ACCOUNT WITH OTP
 ===================================================== */
 const activateAccountWithOTP = async ({ email, code }) => {
   const user = await User.findOne({ email }).select('+otpCode +otpExpires');
   if (!user) throw new Error('Utilisateur introuvable');
   if (user.isActive) throw new Error('Compte déjà activé');
 
-  if (!user.otpCode || user.otpCode !== code)
+  // 🔥 Normalisation
+  const normalizedCode = String(code).trim();
+
+  if (!user.otpCode || user.otpCode !== normalizedCode)
     throw new Error('Code OTP incorrect');
 
-  if (user.otpExpires < new Date())
+  if (!user.otpExpires || user.otpExpires < new Date())
     throw new Error('Code OTP expiré');
 
   user.isActive = true;
@@ -67,13 +76,19 @@ const activateAccountWithOTP = async ({ email, code }) => {
   return { message: 'Compte activé avec succès', token, user };
 };
 
+
 /* =====================================================
    RESEND OTP
 ===================================================== */
 const resendOTP = async (email) => {
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).select('+otpAttempts');
+
   if (!user) throw new Error('Utilisateur introuvable');
   if (user.isActive) throw new Error('Compte déjà activé');
+
+  if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
+    throw new Error('Trop de tentatives OTP. Réessayez plus tard.');
+  }
 
   const otpCode = generateOTP();
   user.otpCode = otpCode;
@@ -81,18 +96,28 @@ const resendOTP = async (email) => {
   user.otpAttempts += 1;
 
   await user.save();
-  await sendActivationEmail(user.email, otpCode, user.name);
 
-  return { message: 'Nouveau code OTP envoyé par email' };
+  try {
+    await sendActivationEmail(user.email, otpCode, user.name);
+  } catch (err) {
+    console.error('📧 Renvoi OTP échoué :', err.message);
+  }
+
+  return { message: 'Nouveau code OTP envoyé' };
 };
 
 /* =====================================================
-   LOGIN
+   LOGIN (SUPER ADMIN OK)
 ===================================================== */
 const login = async ({ email, password }) => {
   const user = await User.findOne({ email }).select('+password');
+
   if (!user) throw new Error('Email ou mot de passe incorrect');
-  if (!user.isActive) throw new Error('Compte non activé');
+
+  // 🔥 SUPER ADMIN BYPASS OTP
+  if (user.role !== 'super_admin' && !user.isActive) {
+    throw new Error('Compte non activé');
+  }
 
   const match = await bcrypt.compare(password, user.password);
   if (!match) throw new Error('Email ou mot de passe incorrect');
@@ -102,10 +127,11 @@ const login = async ({ email, password }) => {
 };
 
 /* =====================================================
-   CREATE SCHOOL (ADMIN – Étape 3)
+   CREATE SCHOOL
 ===================================================== */
 const createSchool = async (userId, { name }) => {
   const user = await User.findById(userId);
+
   if (!user || !user.isActive) throw new Error('Non autorisé');
   if (user.school) throw new Error('Déjà rattaché à une école');
 
@@ -115,7 +141,7 @@ const createSchool = async (userId, { name }) => {
     admin: user._id,
   });
 
-  user.role = 'admin'; // ✅ enum correct
+  user.role = 'admin';
   user.school = school._id;
   user.needsSchoolSetup = false;
   await user.save();
@@ -124,7 +150,7 @@ const createSchool = async (userId, { name }) => {
 };
 
 /* =====================================================
-   JOIN SCHOOL WITH CODE (Étape 4)
+   JOIN SCHOOL
 ===================================================== */
 const joinSchoolWithCode = async (userId, schoolCode) => {
   const user = await User.findById(userId);
@@ -141,7 +167,7 @@ const joinSchoolWithCode = async (userId, schoolCode) => {
 };
 
 /* =====================================================
-   USERS (ADMIN)
+   ADMIN USERS
 ===================================================== */
 const getAllUsers = async (page = 1, limit = 10) => {
   const skip = (page - 1) * limit;

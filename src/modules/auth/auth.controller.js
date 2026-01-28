@@ -23,13 +23,30 @@ const register = async (req, res, next) => {
 ===================================================== */
 const activateAccountWithOTP = async (req, res, next) => {
   try {
-    const result = await authService.activateAccountWithOTP(req.body);
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email et code OTP requis',
+      });
+    }
+
+    const result = await authService.activateAccountWithOTP({
+      email: email.toLowerCase().trim(),
+      code: String(code).trim(),
+    });
+
+    // 🔒 Nettoyage user
+    const user = result.user.toObject();
+    delete user.password;
+    delete user.otpCode;
+    delete user.otpExpires;
 
     res.status(200).json({
       success: true,
       message: result.message,
       token: result.token,
-      user: result.user,
+      user,
     });
   } catch (err) {
     next(err);
@@ -42,9 +59,14 @@ const activateAccountWithOTP = async (req, res, next) => {
 const resendOTP = async (req, res, next) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, message: 'Email requis' });
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email requis',
+      });
+    }
 
-    const result = await authService.resendOTP(email);
+    const result = await authService.resendOTP(email.toLowerCase().trim());
 
     res.status(200).json({
       success: true,
@@ -60,7 +82,26 @@ const resendOTP = async (req, res, next) => {
 ===================================================== */
 const login = async (req, res, next) => {
   try {
-    const { token, user } = await authService.login(req.body);
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email et mot de passe requis',
+      });
+    }
+
+    const { token, user } = await authService.login({
+      email: email.toLowerCase().trim(),
+      password,
+    });
+
+    await createAudit({
+      req,
+      action: 'LOGIN',
+      target: { type: 'User', id: user._id },
+      before: null,
+      after: user,
+    });
 
     res.status(200).json({
       success: true,
@@ -72,14 +113,27 @@ const login = async (req, res, next) => {
 };
 
 /* =====================================================
-   CREATE SCHOOL — Étape 3 (ADMIN)
+   CREATE SCHOOL — Étape 3
 ===================================================== */
 const createSchool = async (req, res, next) => {
   try {
     const { name } = req.body;
-    if (!name) return res.status(400).json({ success: false, message: 'Nom de l’école requis' });
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nom de l’école requis',
+      });
+    }
 
     const result = await authService.createSchool(req.user._id, { name });
+
+    await createAudit({
+      req,
+      action: 'CREATE_SCHOOL',
+      target: { type: 'School', id: result.school._id },
+      before: null,
+      after: result.school,
+    });
 
     res.status(201).json({
       success: true,
@@ -98,9 +152,17 @@ const createSchool = async (req, res, next) => {
 const joinSchoolWithCode = async (req, res, next) => {
   try {
     const { schoolCode } = req.body;
-    if (!schoolCode) return res.status(400).json({ success: false, message: 'Code école requis' });
+    if (!schoolCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Code école requis',
+      });
+    }
 
-    const result = await authService.joinSchoolWithCode(req.user._id, schoolCode);
+    const result = await authService.joinSchoolWithCode(
+      req.user._id,
+      schoolCode.trim().toUpperCase()
+    );
 
     res.status(200).json({
       success: true,
@@ -138,9 +200,17 @@ const getAllUsers = async (req, res, next) => {
 const updatePermissions = async (req, res, next) => {
   try {
     const before = await User.findById(req.params.id).lean();
-    if (!before) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+    if (!before) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur introuvable',
+      });
+    }
 
-    const user = await authService.updatePermissions(req.params.id, req.body.permissions);
+    const user = await authService.updatePermissions(
+      req.params.id,
+      req.body.permissions
+    );
 
     await createAudit({
       req,
@@ -161,7 +231,7 @@ const updatePermissions = async (req, res, next) => {
 ===================================================== */
 const deleteUser = async (req, res, next) => {
   try {
-    if (req.user && req.user._id.toString() === req.params.id) {
+    if (req.user._id.toString() === req.params.id) {
       return res.status(403).json({
         success: false,
         message: 'Vous ne pouvez pas vous supprimer vous-même',
@@ -169,7 +239,12 @@ const deleteUser = async (req, res, next) => {
     }
 
     const before = await User.findById(req.params.id).lean();
-    if (!before) return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+    if (!before) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur introuvable',
+      });
+    }
 
     await authService.deleteUser(req.params.id);
 
