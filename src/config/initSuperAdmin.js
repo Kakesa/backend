@@ -5,7 +5,7 @@ module.exports = async () => {
     // Vérifier si le superadmin existe déjà
     const exists = await User.findOne({ role: "superadmin" });
     if (exists) {
-      console.log("✅ Superadmin déjà existant");
+      // console.log("✅ Superadmin déjà existant");
       return;
     }
 
