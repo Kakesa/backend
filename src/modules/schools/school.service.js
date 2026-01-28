@@ -1,7 +1,6 @@
 const School = require('./school.model');
 const User = require('../users/users.model');
 const { generateSchoolCode } = require('./school.utils');
-const fs = require('fs');
 const path = require('path');
 
 /* =====================================================
@@ -17,13 +16,11 @@ const createSchool = async (data, file) => {
   // Génération du code
   const code = await generateSchoolCode();
 
-  // 🔹 Si fichier logo présent → on le sauvegarde
+  // 🔹 Si fichier logo présent → on utilise le path fourni par multer
   let logoPath = null;
   if (file) {
-    // file.path contient le chemin complet sur le serveur
     logoPath = `/uploads/${path.basename(file.path)}`;
   }
-
 
   // Création école
   const school = await School.create({
@@ -31,6 +28,7 @@ const createSchool = async (data, file) => {
     code,
     logo: logoPath,
     users: [adminId],
+    admin: adminId,
   });
 
   // Lier user ↔ school
@@ -53,9 +51,7 @@ const getAllSchools = async (user, page = 1, limit = 10) => {
 
   // 🔐 ADMIN → seulement son école
   if (user.role !== "superadmin") {
-    if (!user.school) {
-      throw new Error("Aucune école associée à cet utilisateur");
-    }
+    if (!user.school) throw new Error("Aucune école associée à cet utilisateur");
     filter = { _id: user.school };
   }
 
@@ -84,9 +80,7 @@ const getAllSchools = async (user, page = 1, limit = 10) => {
 ===================================================== */
 const getSchoolById = async (id) => {
   const school = await School.findById(id).populate('admin', 'name email');
-  if (!school) {
-    throw new Error('École introuvable');
-  }
+  if (!school) throw new Error('École introuvable');
   return school;
 };
 
@@ -94,22 +88,13 @@ const getSchoolById = async (id) => {
    UPDATE SCHOOL
 ===================================================== */
 const updateSchool = async (id, data, file) => {
-  let logoPath = data.logo || undefined;
+  let updateData = { ...data };
 
   if (file) {
-    const ext = path.extname(file.originalname);
-    const fileName = `school-${Date.now()}${ext}`;
-    const filePath = path.join(__dirname, '../../uploads', fileName);
-    fs.writeFileSync(filePath, file.buffer);
-    logoPath = `/uploads/${fileName}`;
+    updateData.logo = `/uploads/${path.basename(file.path)}`;
   }
 
-  const school = await School.findByIdAndUpdate(
-    id,
-    { ...data, logo: logoPath },
-    { new: true }
-  );
-
+  const school = await School.findByIdAndUpdate(id, updateData, { new: true });
   if (!school) throw new Error('École introuvable');
   return school;
 };
@@ -119,9 +104,7 @@ const updateSchool = async (id, data, file) => {
 ===================================================== */
 const deleteSchool = async (id) => {
   const school = await School.findById(id);
-  if (!school) {
-    throw new Error('École introuvable');
-  }
+  if (!school) throw new Error('École introuvable');
   await school.deleteOne();
 };
 

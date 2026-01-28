@@ -27,7 +27,6 @@ const upload = multer({
     cb(null, true);
   }
 });
-
 // 🔹 Toutes les routes protégées
 router.use(protect);
 
@@ -45,5 +44,8 @@ router.put('/:id', restrictTo('admin'), schoolService.updateSchool);
 
 // DELETE /schools/:id
 router.delete('/:id', restrictTo('admin'), schoolService.deleteSchool);
+
+
+
 
 module.exports = router;

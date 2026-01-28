@@ -115,7 +115,7 @@ const login = async ({ email, password }) => {
   if (!user) throw new Error('Email ou mot de passe incorrect');
 
   // 🔥 SUPER ADMIN BYPASS OTP
-  if (user.role !== 'super_admin' && !user.isActive) {
+  if (user.role !== 'superadmin' && !user.isActive) {
     throw new Error('Compte non activé');
   }
 

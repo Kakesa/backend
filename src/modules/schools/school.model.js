@@ -37,11 +37,12 @@ const schoolSchema = new mongoose.Schema(
     academicYear: {
       type: String,
       required: true,
-      default: "2026-2027", // tu peux adapter
+      default: "2026-2027",
     },
-    types: {
-      type: [String],
-      default: [],
+    type: {
+      type: String,
+      default: "secondary", // remplacer types par un type unique pour simplifier
+      enum: ["primary", "secondary", "highschool", "technical", "university"],
     },
     country: {
       type: String,
@@ -60,6 +61,11 @@ const schoolSchema = new mongoose.Schema(
     },
 
     // Relations
+    admin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true, // toujours obligatoire pour savoir qui a créé l'école
+    },
     users: [
       {
         type: mongoose.Schema.Types.ObjectId,

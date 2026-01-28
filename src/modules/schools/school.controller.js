@@ -5,9 +5,18 @@ const schoolService = require('./school.service');
 ===================================================== */
 const createSchool = async (req, res, next) => {
   try {
+    // 🔹 Les données de l'école + ID admin
     const data = { ...req.body, admin: req.user._id };
-    const school = await schoolService.createSchool(data, req.file); // <-- ici
-    res.status(201).json({ success: true, data: school });
+
+    // 🔹 req.file existe seulement si Multer a traité le fichier
+    const school = await schoolService.createSchool(data, req.file);
+
+    // 🔹 Retour JSON avec code école pour le frontend
+    res.status(201).json({ 
+      success: true, 
+      data: school, 
+      schoolCode: school.code 
+    });
   } catch (err) {
     next(err);
   }
@@ -21,9 +30,13 @@ const getAllSchools = async (req, res, next) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    // ✅ Passer l'utilisateur connecté pour le filtrage RBAC
     const result = await schoolService.getAllSchools(req.user, page, limit);
-    res.status(200).json({ success: true, data: result.data, pagination: result.pagination });
+
+    res.status(200).json({ 
+      success: true, 
+      data: result.data, 
+      pagination: result.pagination 
+    });
   } catch (err) {
     next(err);
   }
@@ -46,7 +59,7 @@ const getSchoolById = async (req, res, next) => {
 ===================================================== */
 const updateSchool = async (req, res, next) => {
   try {
-    const school = await schoolService.updateSchool(req.params.id, req.body, req.file); // <-- ici
+    const school = await schoolService.updateSchool(req.params.id, req.body, req.file);
     res.status(200).json({ success: true, data: school });
   } catch (err) {
     next(err);
