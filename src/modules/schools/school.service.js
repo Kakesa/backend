@@ -2,36 +2,36 @@ const School = require('./school.model');
 const User = require('../users/users.model');
 const { generateSchoolCode } = require('./school.utils');
 const path = require('path');
+const fs = require('fs');
 
 /* =====================================================
    CREATE SCHOOL
 ===================================================== */
 const createSchool = async (data, file) => {
-  const adminId = data.admin;
+  const adminId = data.createdBy;
 
   const admin = await User.findById(adminId);
   if (!admin) throw new Error("Administrateur introuvable");
-  if (admin.needsSchoolSetup === false) throw new Error("École déjà configurée pour cet administrateur");
 
-  // Génération du code
+  if (admin.school) {
+    throw new Error("Cet administrateur a déjà une école");
+  }
+
   const code = await generateSchoolCode();
 
-  // 🔹 Si fichier logo présent → on utilise le path fourni par multer
-  let logoPath = null;
+  let logoPath = "";
   if (file) {
     logoPath = `/uploads/${path.basename(file.path)}`;
   }
 
-  // Création école
   const school = await School.create({
     ...data,
     code,
     logo: logoPath,
     users: [adminId],
-    admin: adminId,
+    createdBy: adminId,
   });
 
-  // Lier user ↔ school
   admin.school = school._id;
   admin.needsSchoolSetup = false;
   await admin.save();
@@ -40,7 +40,7 @@ const createSchool = async (data, file) => {
 };
 
 /* =====================================================
-   GET ALL SCHOOLS (RBAC + MULTI-ÉTABLISSEMENTS)
+   GET ALL SCHOOLS (RBAC)
 ===================================================== */
 const getAllSchools = async (user, page = 1, limit = 10) => {
   const safePage = Math.max(1, page);
@@ -49,9 +49,8 @@ const getAllSchools = async (user, page = 1, limit = 10) => {
 
   let filter = {};
 
-  // 🔐 ADMIN → seulement son école
   if (user.role !== "superadmin") {
-    if (!user.school) throw new Error("Aucune école associée à cet utilisateur");
+    if (!user.school) throw new Error("Aucune école associée");
     filter = { _id: user.school };
   }
 
@@ -60,7 +59,7 @@ const getAllSchools = async (user, page = 1, limit = 10) => {
       .skip(skip)
       .limit(safeLimit)
       .sort({ createdAt: -1 })
-      .populate("admin", "name email"),
+      .populate("createdBy", "name email"),
     School.countDocuments(filter),
   ]);
 
@@ -76,35 +75,61 @@ const getAllSchools = async (user, page = 1, limit = 10) => {
 };
 
 /* =====================================================
-   GET SCHOOL BY ID
+   GET SCHOOL BY ID (SECURED)
 ===================================================== */
-const getSchoolById = async (id) => {
-  const school = await School.findById(id).populate('admin', 'name email');
+const getSchoolById = async (id, user) => {
+  const school = await School.findById(id).populate(
+    'createdBy',
+    'name email'
+  );
+
   if (!school) throw new Error('École introuvable');
+
+  if (user.role !== 'superadmin' && String(school._id) !== String(user.school)) {
+    throw new Error('Accès non autorisé à cette école');
+  }
+
   return school;
 };
 
 /* =====================================================
    UPDATE SCHOOL
 ===================================================== */
-const updateSchool = async (id, data, file) => {
-  let updateData = { ...data };
+const updateSchool = async (id, data, file, user) => {
+  const school = await School.findById(id);
+  if (!school) throw new Error('École introuvable');
 
-  if (file) {
-    updateData.logo = `/uploads/${path.basename(file.path)}`;
+  if (user.role !== 'superadmin' && String(school._id) !== String(user.school)) {
+    throw new Error('Accès non autorisé');
   }
 
-  const school = await School.findByIdAndUpdate(id, updateData, { new: true });
-  if (!school) throw new Error('École introuvable');
+  if (file) {
+    // Supprimer ancien logo
+    if (school.logo) {
+      const oldPath = path.join(__dirname, '../..', school.logo);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    school.logo = `/uploads/${path.basename(file.path)}`;
+  }
+
+  Object.assign(school, data);
+  await school.save();
+
   return school;
 };
 
 /* =====================================================
    DELETE SCHOOL
 ===================================================== */
-const deleteSchool = async (id) => {
+const deleteSchool = async (id, user) => {
   const school = await School.findById(id);
   if (!school) throw new Error('École introuvable');
+
+  if (user.role !== 'superadmin') {
+    throw new Error('Seul le superadmin peut supprimer une école');
+  }
+
   await school.deleteOne();
 };
 

@@ -40,12 +40,13 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
     },
 
-    role: {
+   role: {
       type: String,
       enum: ['superadmin', 'admin', 'teacher', 'student', 'parent'],
-      default: 'student',
-      index: true,
+      index: true, // toujours utile si tu fais des recherches par rôle
+      required: true, // assure que le rôle doit être fourni à la création
     },
+
 
     permissions: { type: [permissionSchema], default: [] },
 

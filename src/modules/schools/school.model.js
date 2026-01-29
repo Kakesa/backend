@@ -60,6 +60,12 @@ const schoolSchema = new mongoose.Schema(
       trim: true,
     },
 
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
     // Relations
     admin: {
       type: mongoose.Schema.Types.ObjectId,

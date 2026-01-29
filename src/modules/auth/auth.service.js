@@ -22,23 +22,28 @@ const signToken = (user) =>
 /* =====================================================
    REGISTER
 ===================================================== */
-const register = async ({ email, password, name }) => {
+const register = async ({ email, password, name, role }) => {
   const existing = await User.findOne({ email });
   if (existing) throw new Error('Un utilisateur avec cet email existe déjà');
 
   const otpCode = generateOTP();
   const otpExpires = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
 
-  const user = await User.create({
+  // ⚠️ Suppression du role par défaut
+  const userData = {
     email,
     name,
-    password, // ⚠️ hashé via pre('save') dans le model
-    role: 'student',
+    password, // hashé via pre('save') dans le model
     isActive: false,
     otpCode,
     otpExpires,
     otpAttempts: 0,
-  });
+  };
+
+  // Si un rôle est fourni à l'inscription, on l'ajoute
+  if (role) userData.role = role;
+
+  const user = await User.create(userData);
 
   try {
     await sendActivationEmail(user.email, otpCode, user.name);

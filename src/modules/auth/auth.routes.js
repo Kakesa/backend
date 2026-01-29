@@ -16,22 +16,47 @@ const {
 const { registerValidation, loginValidation } = require('./auth.validation');
 const { validate } = require('../../middlewares/validate.middleware');
 const { protect } = require('../../middlewares/auth.middleware');
-const { restrictTo } = require('../../middlewares/role.middleware');
+const restrictTo = require('../../middlewares/role.middleware'); // export direct
 const { checkPermission } = require('../../middlewares/permission.middleware');
 
+// -------------------------
 // AUTH
+// -------------------------
 router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
 router.post('/activate-otp', activateAccountWithOTP);
 router.post('/resend-otp', resendOTP);
 
+// -------------------------
 // SCHOOL
-router.post('/school', protect, createSchool);
-router.post('/school/join', protect, joinSchoolWithCode);
+// -------------------------
+router.post('/schools', protect, restrictTo('superadmin', 'admin'), createSchool);
+router.post('/schools/join', protect, joinSchoolWithCode);
 
-// USERS (ADMIN)
-router.get('/users', protect, restrictTo('admin'), getAllUsers);
-router.put('/users/:id/permissions', protect, restrictTo('admin'), checkPermission('users','update'), updatePermissions);
-router.delete('/users/:id', protect, restrictTo('admin'), checkPermission('users','delete'), deleteUser);
+// -------------------------
+// USERS (ADMIN / SUPERADMIN)
+// -------------------------
+router.get(
+  '/users',
+  protect,
+  restrictTo('superadmin', 'admin'),
+  getAllUsers
+);
+
+router.put(
+  '/users/:id/permissions',
+  protect,
+  restrictTo('superadmin', 'admin'),
+  checkPermission('users', 'update'),
+  updatePermissions
+);
+
+router.delete(
+  '/users/:id',
+  protect,
+  restrictTo('superadmin', 'admin'),
+  checkPermission('users', 'delete'),
+  deleteUser
+);
 
 module.exports = router;
