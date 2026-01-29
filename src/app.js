@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const multer = require('multer'); // 📌 Multer pour les fichiers
+const multer = require('multer'); 
 require('dotenv').config();
 
 const connectDB = require('./config/database');
