@@ -68,7 +68,7 @@ router.get(
   '/superadmin/activities',
   protect,
   restrictTo('superadmin'),
-  schoolController.getSchoolActivities
+  schoolController.getAllActivities
 );
 
 // GET /api/schools
