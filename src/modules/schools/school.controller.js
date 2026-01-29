@@ -8,6 +8,7 @@ const createSchool = async (req, res, next) => {
     const data = {
       ...req.body,
       createdBy: req.user._id,
+      admin: req.user._id, // <-- important : défini l'admin de l'école
     };
 
     const school = await schoolService.createSchool(data, req.file);
@@ -23,6 +24,7 @@ const createSchool = async (req, res, next) => {
     next(err);
   }
 };
+
 
 /* =====================================================
    GET ALL SCHOOLS
