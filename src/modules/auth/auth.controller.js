@@ -149,29 +149,52 @@ const createSchool = async (req, res, next) => {
 /* =====================================================
    JOIN SCHOOL WITH CODE — Étape 4
 ===================================================== */
-const joinSchoolWithCode = async (req, res, next) => {
-  try {
-    const { schoolCode } = req.body;
-    if (!schoolCode) {
-      return res.status(400).json({
-        success: false,
-        message: 'Code école requis',
-      });
-    }
+const joinSchoolWithCode = async (userId, schoolCode) => {
+  //  Vérifier l'utilisateur
+  const user = await User.findById(userId);
 
-    const result = await authService.joinSchoolWithCode(
-      req.user._id,
-      schoolCode.trim().toUpperCase()
-    );
-
-    res.status(200).json({
-      success: true,
-      message: result.message,
-      schoolId: result.schoolId,
-    });
-  } catch (err) {
-    next(err);
+  if (!user) {
+    throw {
+      statusCode: 404,
+      message: "Utilisateur introuvable",
+    };
   }
+
+  //  🚫 Déjà rattaché à une école
+  if (user.school) {
+    throw {
+      statusCode: 403,
+      message:
+        "Vous êtes déjà rattaché à une école. Contactez l'administration pour un changement.",
+    };
+  }
+
+  //  Vérifier l'école
+  const school = await School.findOne({
+    code: schoolCode,
+    isActive: true,
+  });
+
+  if (!school) {
+    throw {
+      statusCode: 404,
+      message: "Code école invalide ou école inactive",
+    };
+  }
+
+  //  Associer l'utilisateur
+  user.school = school._id;
+  await user.save();
+
+  //  Ajouter l'utilisateur à l'école (sécurisé)
+  await School.findByIdAndUpdate(school._id, {
+    $addToSet: { users: user._id },
+  });
+
+  return {
+    message: `Vous avez rejoint l'école ${school.name}`,
+    schoolId: school._id,
+  };
 };
 
 /* =====================================================
