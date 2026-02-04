@@ -7,5 +7,5 @@ module.exports = (app) => {
   app.use('/api/auth', authRoutes);
   app.use('/api/audit', auditRoutes);
   app.use('/api/schools', schoolRoutes);
-  // app.use('/api/superadmin', superAdminRoutes);
+  app.use('/api/superadmin', superAdminRoutes);
 };

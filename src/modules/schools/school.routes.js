@@ -57,19 +57,6 @@ router.post(
   schoolController.createSchool
 );
 
-router.get(
-  '/superadmin/schools',
-  protect,
-  restrictTo('superadmin'),
-  schoolController.getAllSchoolsWithStats
-);
-
-router.get(
-  '/superadmin/activities',
-  protect,
-  restrictTo('superadmin'),
-  schoolController.getAllActivities
-);
 
 // GET /api/schools
 router.get(
