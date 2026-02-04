@@ -4,31 +4,34 @@ const router = express.Router();
 const { protect } = require('../../middlewares/auth.middleware');
 const restrictTo = require('../../middlewares/role.middleware');
 
-const {
-  getAllSchoolsWithStats,
-  getSchoolWithStatsById,
-  getGlobalStats,
-  getAllActivities,
-  toggleSchoolStatus,
-} = require('./superadmin.controller');
+const superAdminController = require('./superadmin.controller');
 
-// 🔐 TOUT superadmin uniquement
+// 🔐 Middleware : accessible uniquement aux superadmins
 router.use(protect);
 router.use(restrictTo('superadmin'));
 
-// GET /api/superadmin/schools
-router.get('/schools', getAllSchoolsWithStats);
+/* =====================================================
+   SCHOOLS
+===================================================== */
+// GET all schools with stats
+router.get('/schools', superAdminController.getAllSchoolsWithStats);
 
-// GET /api/superadmin/schools/:id
-router.get('/schools/:id', getSchoolWithStatsById);
+// GET a single school with stats
+router.get('/schools/:id', superAdminController.getSchoolWithStatsById);
 
-// GET /api/superadmin/stats
-router.get('/stats', getGlobalStats);
+// PUT toggle school status (active/inactive)
+router.put('/schools/:id/toggle-status', superAdminController.toggleSchoolStatus);
 
-// GET /api/superadmin/activities
-router.get('/activities', getAllActivities);
+/* =====================================================
+   GLOBAL STATS
+===================================================== */
+// GET overall platform stats
+router.get('/stats', superAdminController.getGlobalStats);
 
-// PUT /api/superadmin/schools/:id/toggle-status
-router.put('/schools/:id/toggle-status', toggleSchoolStatus);
+/* =====================================================
+   ACTIVITIES
+===================================================== */
+// GET recent activities (audit logs)
+router.get('/activities', superAdminController.getAllActivities);
 
 module.exports = router;
