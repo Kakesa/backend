@@ -5,8 +5,10 @@ const fs = require('fs');
 
 const schoolController = require('./school.controller');
 const { protect } = require('../../middlewares/auth.middleware');
-const restrictTo = require('../../middlewares/role.middleware'); // import direct
-const schoolSetup = require('../../middlewares/schoolSetup.middleware'); // import direct
+const restrictTo = require('../../middlewares/role.middleware');
+const schoolSetup = require('../../middlewares/schoolSetup.middleware');
+const checkSubscription = require('../../middlewares/checkSubscription.middleware');
+
 const multer = require('multer');
 
 /* =====================================================
@@ -14,41 +16,34 @@ const multer = require('multer');
 ===================================================== */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Définit le chemin uploads à la racine backend
     const uploadPath = path.join(__dirname, '../uploads');
-    // Crée le dossier s'il n'existe pas
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Seules les images sont autorisées'));
-    }
+    if (!file.mimetype.startsWith('image/')) return cb(new Error('Seules les images sont autorisées'));
     cb(null, true);
-  }
+  },
 });
 
 /* =====================================================
-   PROTECTED ROUTES
+   PROTECTION GLOBALE
 ===================================================== */
 router.use(protect);
 
 /* =====================================================
-   ROUTES
+   ROUTES SANS ABONNEMENT
 ===================================================== */
-
-// POST /api/schools - superadmin et admin
+// Création d’école (première fois → pas encore d’abonnement)
 router.post(
   '/',
   restrictTo('superadmin', 'admin'),
@@ -57,6 +52,10 @@ router.post(
   schoolController.createSchool
 );
 
+/* =====================================================
+   ROUTES AVEC ABONNEMENT 🔒
+===================================================== */
+router.use(checkSubscription);
 
 // GET /api/schools
 router.get(
@@ -80,7 +79,7 @@ router.put(
   schoolController.updateSchool
 );
 
-// DELETE /api/schools/:id - uniquement superadmin
+// DELETE /api/schools/:id (uniquement superadmin)
 router.delete(
   '/:id',
   restrictTo('superadmin'),

@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const authService = require('./auth.service');
 const User = require('../users/users.model');
 const { createAudit } = require('../audit/audit.service');
@@ -150,6 +151,13 @@ const createSchool = async (req, res, next) => {
    JOIN SCHOOL WITH CODE — Étape 4
 ===================================================== */
 const joinSchoolWithCode = async (userId, schoolCode) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw {
+      statusCode: 400,
+      message: "Identifiant utilisateur invalide",
+    };
+  }
+
   //  Vérifier l'utilisateur
   const user = await User.findById(userId);
 
@@ -160,19 +168,19 @@ const joinSchoolWithCode = async (userId, schoolCode) => {
     };
   }
 
-  //  🚫 Déjà rattaché à une école
+  //  Déjà rattaché
   if (user.school) {
     throw {
       statusCode: 403,
       message:
-        "Vous êtes déjà rattaché à une école. Contactez l'administration pour un changement.",
+        "Vous êtes déjà rattaché à une école. Contactez l'administration.",
     };
   }
 
   //  Vérifier l'école
   const school = await School.findOne({
     code: schoolCode,
-    isActive: true,
+    status: "active",
   });
 
   if (!school) {
@@ -182,13 +190,14 @@ const joinSchoolWithCode = async (userId, schoolCode) => {
     };
   }
 
-  //  Associer l'utilisateur
-  user.school = school._id;
+  //  Lier user → school
+  user.school = school.id;
+  user.needsSchoolSetup = false;
   await user.save();
 
-  //  Ajouter l'utilisateur à l'école (sécurisé)
-  await School.findByIdAndUpdate(school._id, {
-    $addToSet: { users: user._id },
+  //  Lier school → user
+  await School.findByIdAndUpdate(school.id, {
+    $addToSet: { users: user.id },
   });
 
   return {

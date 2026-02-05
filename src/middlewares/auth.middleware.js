@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../modules/users/users.model');
+const Subscription = require('../modules/subscriptions/subscription.model'); // ⚠️ il manquait cet import
 
 const protect = async (req, res, next) => {
   try {
@@ -30,4 +31,25 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const checkSubscriptionActive = async (req, res, next) => {
+  if (!req.user?.school) {
+    return res.status(403).json({ message: "Utilisateur non rattaché à une école" });
+  }
+
+  const subscription = await Subscription.findOne({
+    school: req.user.school,
+    status: 'active',
+    endDate: { $gte: new Date() },
+  });
+
+  if (!subscription) {
+    return res.status(403).json({
+      message: "Abonnement expiré ou inactif",
+    });
+  }
+
+  next();
+};
+
+// ⚠️ Exporter les deux middlewares
+module.exports = { protect, checkSubscriptionActive };

@@ -1,36 +1,87 @@
+const mongoose = require('mongoose');
 const subscriptionService = require('./subscription.service');
 
 /* ===========================
-   CREATE / UPDATE
+   CREATE / UPDATE SUBSCRIPTION
 =========================== */
-exports.createOrUpdateSubscription = async (req, res) => {
-  const { schoolId, plan, durationMonths } = req.body;
+const upsertSubscription = async (req, res, next) => {
+  try {
+    const { schoolId, plan, durationMonths } = req.body;
 
-  const subscription = await subscriptionService.upsertSubscription({
-    schoolId,
-    plan,
-    durationMonths,
-  });
+    if (!schoolId || !plan || !durationMonths) {
+      return res.status(400).json({
+        success: false,
+        message: 'schoolId, plan et durationMonths requis',
+      });
+    }
 
-  res.status(200).json(subscription);
+    if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'schoolId invalide',
+      });
+    }
+
+    const subscription = await subscriptionService.upsertSubscription({
+      schoolId,
+      plan,
+      durationMonths,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: subscription,
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 /* ===========================
    GET BY SCHOOL
 =========================== */
-exports.getSchoolSubscription = async (req, res) => {
-  const { schoolId } = req.params;
+const getBySchool = async (req, res, next) => {
+  try {
+    const { schoolId } = req.params;
 
-  const subscription = await subscriptionService.getSubscriptionBySchool(schoolId);
+    if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'schoolId invalide',
+      });
+    }
 
-  res.status(200).json(subscription);
+    const subscription = await subscriptionService.getSubscriptionBySchool(
+      schoolId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: subscription,
+    });
+  } catch (err) {
+    next(err);
+  }
 };
 
 /* ===========================
    GLOBAL STATS
 =========================== */
-exports.getGlobalSubscriptionStats = async (_req, res) => {
-  const stats = await subscriptionService.getGlobalSubscriptionStats();
+const getStats = async (req, res, next) => {
+  try {
+    const stats = await subscriptionService.getGlobalSubscriptionStats();
 
-  res.status(200).json(stats);
+    res.status(200).json({
+      success: true,
+      data: stats,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  upsertSubscription,
+  getBySchool,
+  getStats,
 };

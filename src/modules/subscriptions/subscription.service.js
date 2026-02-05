@@ -1,4 +1,7 @@
 const Subscription = require('./subscription.model');
+const School = require('../schools/school.model');
+const redis = require('../../config/redis');
+
 
 /* ===========================
    CREATE OR UPDATE
@@ -8,16 +11,19 @@ const upsertSubscription = async ({ schoolId, plan, durationMonths }) => {
   const endDate = new Date();
   endDate.setMonth(endDate.getMonth() + durationMonths);
 
-  return Subscription.findOneAndUpdate(
+  const subscription = await Subscription.findOneAndUpdate(
     { school: schoolId },
-    {
-      status: 'active',
-      plan,
-      startDate,
-      endDate,
-    },
+    { status: 'active', plan, startDate, endDate },
     { new: true, upsert: true }
   );
+
+  // 🔁 Sync direct dans School.subscription
+  await School.findByIdAndUpdate(schoolId, { subscription: subscription._id });
+
+  // 🔥 Update cache Redis
+  await redis.set(`school:${schoolId}:subscription`, JSON.stringify(subscription), 'EX', 3600);
+
+  return subscription;
 };
 
 /* ===========================
