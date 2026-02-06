@@ -34,4 +34,22 @@ router.get('/stats', superAdminController.getGlobalStats);
 // GET recent activities (audit logs)
 router.get('/activities', superAdminController.getAllActivities);
 
+/* =====================================================
+   ADMINS MANAGEMENT
+===================================================== */
+// GET all school admins
+router.get('/admins', superAdminController.getAllAdmins);
+
+// GET single admin
+router.get('/admins/:id', superAdminController.getAdminById);
+
+// PUT toggle admin status
+router.put('/admins/:id/toggle-status', superAdminController.toggleAdminStatus);
+
+// DELETE admin
+router.delete('/admins/:id', superAdminController.deleteAdmin);
+
+// POST reset password
+router.post('/admins/:id/reset-password', superAdminController.resetAdminPassword);
+
 module.exports = router;

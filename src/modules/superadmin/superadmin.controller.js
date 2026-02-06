@@ -81,10 +81,68 @@ const toggleSchoolStatus = async (req, res, next) => {
   }
 };
 
+/* =====================================================
+   ADMINS MANAGEMENT
+==================================================== */
+
+const getAllAdmins = async (req, res, next) => {
+  try {
+    const data = await superAdminService.getAllAdmins();
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getAdminById = async (req, res, next) => {
+  try {
+    const data = await superAdminService.getAdminById(req.params.id);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const toggleAdminStatus = async (req, res, next) => {
+  try {
+    const admin = await superAdminService.toggleAdminStatus(req.params.id);
+    res.status(200).json({ 
+      success: true, 
+      message: `Statut de l'admin mis à jour: ${admin.isActive ? 'Actif' : 'Inactif'}`,
+      data: admin 
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteAdmin = async (req, res, next) => {
+  try {
+    await superAdminService.deleteAdmin(req.params.id);
+    res.status(200).json({ success: true, message: 'Administrateur supprimé avec succès' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const resetAdminPassword = async (req, res, next) => {
+  try {
+    const result = await superAdminService.resetAdminPassword(req.params.id);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAllSchoolsWithStats,
   getSchoolWithStatsById,
   getGlobalStats,
   getAllActivities,
   toggleSchoolStatus,
+  getAllAdmins,
+  getAdminById,
+  toggleAdminStatus,
+  deleteAdmin,
+  resetAdminPassword,
 };

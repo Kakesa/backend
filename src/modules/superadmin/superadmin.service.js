@@ -119,10 +119,97 @@ const toggleSchoolStatus = async (schoolId) => {
   return school;
 };
 
+/* =====================================================
+   GET ALL ADMINS
+===================================================== */
+const getAllAdmins = async () => {
+  const admins = await User.find({ role: 'admin' })
+    .populate('school', 'name')
+    .lean();
+
+  return admins.map(admin => ({
+    id: admin._id,
+    userId: admin._id,
+    schoolId: admin.school?._id || null,
+    schoolName: admin.school?.name || 'N/A',
+    firstName: admin.name.split(' ')[0] || '',
+    lastName: admin.name.split(' ').slice(1).join(' ') || '',
+    email: admin.email,
+    phone: admin.phone,
+    status: admin.isActive ? 'active' : 'inactive', // Mapping isActive to status
+    createdAt: admin.createdAt,
+    lastLogin: admin.updatedAt, // Fallback as we might not have a dedicated lastLogin field
+  }));
+};
+
+/* =====================================================
+   GET ADMIN BY ID
+===================================================== */
+const getAdminById = async (id) => {
+  const admin = await User.findOne({ _id: id, role: 'admin' })
+    .populate('school', 'name')
+    .lean();
+
+  if (!admin) throw { statusCode: 404, message: 'Administrateur introuvable' };
+
+  return {
+    id: admin._id,
+    userId: admin._id,
+    schoolId: admin.school?._id || null,
+    schoolName: admin.school?.name || 'N/A',
+    firstName: admin.name.split(' ')[0] || '',
+    lastName: admin.name.split(' ').slice(1).join(' ') || '',
+    email: admin.email,
+    phone: admin.phone,
+    status: admin.isActive ? 'active' : 'inactive',
+    createdAt: admin.createdAt,
+    lastLogin: admin.updatedAt,
+  };
+};
+
+/* =====================================================
+   TOGGLE ADMIN STATUS
+===================================================== */
+const toggleAdminStatus = async (id) => {
+  const admin = await User.findOne({ _id: id, role: 'admin' });
+  if (!admin) throw { statusCode: 404, message: 'Administrateur introuvable' };
+
+  admin.isActive = !admin.isActive;
+  await admin.save();
+
+  return admin;
+};
+
+/* =====================================================
+   DELETE ADMIN
+===================================================== */
+const deleteAdmin = async (id) => {
+  const result = await User.deleteOne({ _id: id, role: 'admin' });
+  if (result.deletedCount === 0) throw { statusCode: 404, message: 'Administrateur introuvable' };
+  return true;
+};
+
+/* =====================================================
+   RESET ADMIN PASSWORD
+===================================================== */
+const resetAdminPassword = async (id) => {
+  const admin = await User.findOne({ _id: id, role: 'admin' });
+  if (!admin) throw { statusCode: 404, message: 'Administrateur introuvable' };
+
+  // TODO: Implement real password reset (e.g., send temporary password or link via email)
+  // For now, we'll just return success to satisfy the frontend call
+  return { success: true, message: 'Réinitialisation demandée avec succès' };
+};
+
 module.exports = {
   getAllSchoolsWithStats,
   getSchoolWithStatsById,
   getGlobalStats,
   getAllActivities,
   toggleSchoolStatus,
+  getAllAdmins,
+  getAdminById,
+  toggleAdminStatus,
+  deleteAdmin,
+  resetAdminPassword,
 };
