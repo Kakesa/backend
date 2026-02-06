@@ -40,6 +40,19 @@ const getClassById = async (id) => {
 };
 
 /* =====================================================
+   GET CLASSES BY LEVEL
+===================================================== */
+const getClassesByLevel = async (level, schoolId) => {
+  const filter = { level };
+  if (schoolId) filter.schoolId = schoolId;
+
+  return await Class.find(filter)
+    .populate("mainTeacherId", "name email")
+    .sort({ name: 1 })
+    .lean();
+};
+
+/* =====================================================
    UPDATE CLASS
 ===================================================== */
 const updateClass = async (id, data) => {
@@ -65,6 +78,7 @@ module.exports = {
   createClass,
   getAllClasses,
   getClassById,
+  getClassesByLevel,
   updateClass,
   deleteClass,
 };

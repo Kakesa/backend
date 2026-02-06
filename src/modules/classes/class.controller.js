@@ -25,6 +25,20 @@ const getClassById = async (req, res, next) => {
 };
 
 /* =====================================================
+   GET CLASSES BY LEVEL
+===================================================== */
+const getClassesByLevel = async (req, res, next) => {
+  try {
+    const { level } = req.params;
+    const { schoolId } = req.query;
+    const data = await classService.getClassesByLevel(level, schoolId);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
    CREATE CLASS
 ===================================================== */
 const createClass = async (req, res, next) => {
@@ -63,6 +77,7 @@ const deleteClass = async (req, res, next) => {
 module.exports = {
   getAllClasses,
   getClassById,
+  getClassesByLevel,
   createClass,
   updateClass,
   deleteClass,
