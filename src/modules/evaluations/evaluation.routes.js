@@ -5,14 +5,11 @@ const { protect } = require("../../middlewares/auth.middleware");
 
 router.use(protect);
 
-// Competences
-router.get("/competences", evaluationController.getCompetences);
-router.get("/competences/:id", evaluationController.getCompetenceById);
-router.post("/competences", evaluationController.createCompetence);
-
 // Evaluations
 router.get("/student/:studentId", evaluationController.getStudentEvaluations);
 router.get("/progress/:studentId/:competenceId", evaluationController.getProgress);
 router.post("/", evaluationController.createEvaluation);
+router.put('/:id', evaluationController.updateEvaluation);
+router.delete('/:id', evaluationController.deleteEvaluation);
 
 module.exports = router;

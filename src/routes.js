@@ -18,6 +18,7 @@ const notificationRoutes = require('./modules/notifications/notification.routes'
 const absenceRoutes = require('./modules/absences/absence.routes');
 const assignmentRoutes = require('./modules/assignments/assignment.routes');
 const evaluationRoutes = require('./modules/evaluations/evaluation.routes');
+const competenceRoutes = require('./modules/evaluations/competence.routes');
 const calendarRoutes = require('./modules/calendar/event.routes');
 const roleRoutes = require('./modules/roles/role.routes');
 const invitationRoutes = require('./modules/invitations/invitation.routes');
@@ -44,7 +45,7 @@ module.exports = (app) => {
   app.use('/api/justifications', absenceRoutes);
   app.use('/api/assignments', assignmentRoutes);
   app.use('/api/evaluations', evaluationRoutes);
-  app.use('/api/competences', evaluationRoutes);
+  app.use('/api/competences', competenceRoutes);
   app.use('/api/calendar', calendarRoutes);
   app.use('/api/roles', roleRoutes);
   app.use('/api/invitations', invitationRoutes);

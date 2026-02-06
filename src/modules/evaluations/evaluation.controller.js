@@ -30,6 +30,24 @@ const createCompetence = async (req, res, next) => {
   }
 };
 
+const updateCompetence = async (req, res, next) => {
+  try {
+    const data = await evaluationService.updateCompetence(req.params.id, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteCompetence = async (req, res, next) => {
+  try {
+    await evaluationService.deleteCompetence(req.params.id);
+    res.status(200).json({ success: true, message: "Compétence supprimée" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 /* =====================================================
    EVALUATION CONTROLLER
 ===================================================== */
@@ -61,11 +79,33 @@ const createEvaluation = async (req, res, next) => {
   }
 };
 
+const updateEvaluation = async (req, res, next) => {
+  try {
+    const data = await evaluationService.updateEvaluation(req.params.id, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteEvaluation = async (req, res, next) => {
+  try {
+    await evaluationService.deleteEvaluation(req.params.id);
+    res.status(200).json({ success: true, message: "Évaluation supprimée" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getCompetences,
   getCompetenceById,
   createCompetence,
+  updateCompetence,
+  deleteCompetence,
   getStudentEvaluations,
   getProgress,
   createEvaluation,
+  updateEvaluation,
+  deleteEvaluation,
 };

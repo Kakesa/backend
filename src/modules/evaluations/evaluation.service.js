@@ -24,6 +24,14 @@ const getCompetenceById = async (id) => {
   return await Competence.findById(id).populate("subjectId", "name code").lean();
 };
 
+const updateCompetence = async (id, data) => {
+  return await Competence.findByIdAndUpdate(id, data, { new: true });
+};
+
+const deleteCompetence = async (id) => {
+  return await Competence.findByIdAndDelete(id);
+};
+
 /* =====================================================
    EVALUATION SERVICE
 ===================================================== */
@@ -46,11 +54,23 @@ const getProgress = async (studentId, competenceId) => {
     .lean();
 };
 
+const updateEvaluation = async (id, data) => {
+  return await Evaluation.findByIdAndUpdate(id, data, { new: true });
+};
+
+const deleteEvaluation = async (id) => {
+  return await Evaluation.findByIdAndDelete(id);
+};
+
 module.exports = {
   createCompetence,
   getCompetences,
   getCompetenceById,
+  updateCompetence,
+  deleteCompetence,
   evaluateStudent,
   getStudentEvaluations,
   getProgress,
+  updateEvaluation,
+  deleteEvaluation,
 };
