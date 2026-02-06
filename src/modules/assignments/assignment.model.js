@@ -46,6 +46,48 @@ const assignmentSchema = new mongoose.Schema(
   }
 );
 
+const submissionSchema = new mongoose.Schema(
+  {
+    assignmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Assignment",
+      required: true,
+    },
+    studentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
+      required: true,
+    },
+    content: {
+      type: String,
+      default: "",
+    },
+    fileUrl: {
+      type: String,
+      default: "",
+    },
+    grade: {
+      type: Number,
+      default: null,
+    },
+    feedback: {
+      type: String,
+      default: "",
+    },
+    status: {
+      type: String,
+      enum: ["submitted", "graded", "late"],
+      default: "submitted",
+    },
+  },
+  {
+    timestamps: true,
+    versionKey: false,
+  }
+);
+
+submissionSchema.index({ assignmentId: 1, studentId: 1 }, { unique: true });
+
 const Assignment = mongoose.model("Assignment", assignmentSchema);
 const Submission = mongoose.model("Submission", submissionSchema);
 

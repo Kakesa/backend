@@ -2,7 +2,7 @@
 const router = require("express").Router();
 const { inviteUser } = require("./invitation.controller");
 const { protect } = require("../../middlewares/auth.middleware");
-const { restrictTo } = require("../../middlewares/role.middleware");
+const restrictTo = require("../../middlewares/role.middleware");
 
 router.post("/", protect, restrictTo("admin"), inviteUser);
 
