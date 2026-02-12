@@ -1,16 +1,27 @@
 const Student = require("./student.model");
+const Class = require("../classes/class.model");
+const Course = require("../courses/course.model");
 
 /* =====================================================
    CREATE STUDENT
-===================================================== */
+ ===================================================== */
 const createStudent = async (data) => {
   const student = new Student(data);
-  return await student.save();
+  const savedStudent = await student.save();
+
+  // Synchronize with Class: Add student ID to the class's students array
+  if (savedStudent.class) {
+    await Class.findByIdAndUpdate(savedStudent.class, {
+      $addToSet: { students: savedStudent._id },
+    });
+  }
+
+  return savedStudent;
 };
 
 /* =====================================================
-   GET ALL STUDENTS
-===================================================== */
+   GET ALL STUDENTS / FILTERS
+ ===================================================== */
 const getAllStudents = async (query = {}, options = {}) => {
   const { page = 1, limit = 10, schoolId, classId } = query;
   
@@ -38,7 +49,7 @@ const getAllStudents = async (query = {}, options = {}) => {
 
 /* =====================================================
    GET STUDENT BY ID
-===================================================== */
+ ===================================================== */
 const getStudentById = async (id) => {
   const student = await Student.findById(id)
     .populate("class", "name")
@@ -51,7 +62,7 @@ const getStudentById = async (id) => {
 
 /* =====================================================
    GET STUDENTS BY CLASS
-===================================================== */
+ ===================================================== */
 const getStudentsByClass = async (classId) => {
   return await Student.find({ class: classId })
     .populate("class", "name")
@@ -59,8 +70,24 @@ const getStudentsByClass = async (classId) => {
 };
 
 /* =====================================================
+   GET STUDENT COURSES
+ ===================================================== */
+const getStudentCourses = async (studentId) => {
+  const student = await Student.findById(studentId).lean();
+  if (!student) throw { statusCode: 404, message: "Élève introuvable" };
+
+  // Courses are linked to the class
+  const courses = await Course.find({ classId: student.class })
+    .populate("subjectId")
+    .populate("teacherId", "firstName lastName email")
+    .lean();
+
+  return courses;
+};
+
+/* =====================================================
    SEARCH STUDENTS
-===================================================== */
+ ===================================================== */
 const searchStudents = async (searchTerm, schoolId) => {
   const filter = {
     school: schoolId,
@@ -78,23 +105,47 @@ const searchStudents = async (searchTerm, schoolId) => {
 
 /* =====================================================
    UPDATE STUDENT
-===================================================== */
+ ===================================================== */
 const updateStudent = async (id, data) => {
+  const oldStudent = await Student.findById(id);
+  
   const student = await Student.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
   });
   
   if (!student) throw { statusCode: 404, message: "Élève introuvable" };
+
+  // If class changed, update both classes
+  if (data.class && oldStudent.class && oldStudent.class.toString() !== data.class.toString()) {
+    // Remove from old class
+    await Class.findByIdAndUpdate(oldStudent.class, {
+      $pull: { students: id },
+    });
+    // Add to new class
+    await Class.findByIdAndUpdate(data.class, {
+      $addToSet: { students: id },
+    });
+  }
+
   return student;
 };
 
 /* =====================================================
    DELETE STUDENT
-===================================================== */
+ ===================================================== */
 const deleteStudent = async (id) => {
+  const student = await Student.findById(id);
+  if (!student) throw { statusCode: 404, message: "Élève introuvable" };
+
+  // Remove from class
+  if (student.class) {
+    await Class.findByIdAndUpdate(student.class, {
+      $pull: { students: id },
+    });
+  }
+
   const result = await Student.deleteOne({ _id: id });
-  if (result.deletedCount === 0) throw { statusCode: 404, message: "Élève introuvable" };
   return true;
 };
 
@@ -103,6 +154,7 @@ module.exports = {
   getAllStudents,
   getStudentById,
   getStudentsByClass,
+  getStudentCourses,
   searchStudents,
   updateStudent,
   deleteStudent,

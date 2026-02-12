@@ -62,6 +62,14 @@ const studentSchema = new mongoose.Schema(
       enum: ["ACTIVE", "INACTIVE", "SUSPENDED"],
       default: "ACTIVE",
     },
+    parentName: {
+      type: String,
+      trim: true,
+    },
+    parentPhone: {
+      type: String,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

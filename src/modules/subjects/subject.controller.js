@@ -29,6 +29,11 @@ const getSubjectById = async (req, res, next) => {
 ===================================================== */
 const createSubject = async (req, res, next) => {
   try {
+    // Injecter l'ID de l'école depuis l'utilisateur connecté
+    if (req.user && req.user.school) {
+      req.body.schoolId = req.user.school;
+    }
+
     const data = await subjectService.createSubject(req.body);
     res.status(201).json({ success: true, data });
   } catch (err) {
