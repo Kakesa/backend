@@ -297,6 +297,13 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+const getMe = async (req, res) => {
+  res.status(200).json({
+    success: true,
+    data: req.user,
+  });
+};
+
 module.exports = {
   register,
   activateAccountWithOTP,
@@ -307,4 +314,5 @@ module.exports = {
   getAllUsers,
   updatePermissions,
   deleteUser,
+  getMe,
 };

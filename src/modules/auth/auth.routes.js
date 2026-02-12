@@ -11,6 +11,7 @@ const {
   getAllUsers,
   updatePermissions,
   deleteUser,
+  getMe,
 } = require('./auth.controller');
 
 const { registerValidation, loginValidation } = require('./auth.validation');
@@ -26,6 +27,7 @@ router.post('/register', registerValidation, validate, register);
 router.post('/login', loginValidation, validate, login);
 router.post('/activate-otp', activateAccountWithOTP);
 router.post('/resend-otp', resendOTP);
+router.get('/me', protect, getMe);
 
 // -------------------------
 // SCHOOL
