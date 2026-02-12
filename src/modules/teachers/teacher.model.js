@@ -42,8 +42,8 @@ const teacherSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["ACTIVE", "INACTIVE"],
-      default: "ACTIVE",
+      enum: ["ACTIVE", "INACTIVE", "active", "inactive"],
+      default: "active",
     },
     subjects: [
       {

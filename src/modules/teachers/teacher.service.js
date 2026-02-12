@@ -4,6 +4,17 @@ const Teacher = require("./teacher.model");
    CREATE TEACHER
 ===================================================== */
 const createTeacher = async (data) => {
+  // 🧹 Nettoyage des données
+  if (data.subjects && Array.isArray(data.subjects)) {
+    data.subjects = data.subjects.filter(id => id && id.trim() !== "");
+  }
+  if (data.classes && Array.isArray(data.classes)) {
+    data.classes = data.classes.filter(id => id && id.trim() !== "");
+  }
+  if (data.status) {
+    data.status = data.status.toLowerCase();
+  }
+
   const teacher = new Teacher(data);
   return await teacher.save();
 };
@@ -40,6 +51,17 @@ const getTeacherById = async (id) => {
    UPDATE TEACHER
 ===================================================== */
 const updateTeacher = async (id, data) => {
+  // 🧹 Nettoyage des données
+  if (data.subjects && Array.isArray(data.subjects)) {
+    data.subjects = data.subjects.filter(id => id && id.trim() !== "");
+  }
+  if (data.classes && Array.isArray(data.classes)) {
+    data.classes = data.classes.filter(id => id && id.trim() !== "");
+  }
+  if (data.status) {
+    data.status = data.status.toLowerCase();
+  }
+
   const teacher = await Teacher.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
