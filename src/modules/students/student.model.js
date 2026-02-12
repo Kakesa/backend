@@ -32,7 +32,7 @@ const studentSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      enum: ["MALE", "FEMALE", "OTHER"],
+      enum: ["MALE", "FEMALE", "OTHER", "M", "F", "male", "female", "other"],
       required: true,
     },
     address: {
@@ -59,7 +59,7 @@ const studentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["ACTIVE", "INACTIVE", "SUSPENDED"],
+      enum: ["ACTIVE", "INACTIVE", "SUSPENDED", "active", "inactive", "suspended"],
       default: "ACTIVE",
     },
     parentName: {

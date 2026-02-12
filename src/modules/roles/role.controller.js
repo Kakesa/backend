@@ -57,6 +57,34 @@ const assignRole = async (req, res, next) => {
   }
 };
 
+const updateRole = async (req, res, next) => {
+  try {
+    const data = await roleService.updateRole(req.params.id, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteRole = async (req, res, next) => {
+  try {
+    await roleService.deleteRole(req.params.id);
+    res.status(200).json({ success: true, message: "Rôle supprimé" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateRolePermissions = async (req, res, next) => {
+  try {
+    const { permissions } = req.body;
+    const data = await roleService.updateRolePermissions(req.params.id, permissions);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getRoles,
   getRoleById,
@@ -64,4 +92,7 @@ module.exports = {
   getRoleUsers,
   checkPermission,
   assignRole,
+  updateRole,
+  deleteRole,
+  updateRolePermissions,
 };

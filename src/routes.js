@@ -21,6 +21,7 @@ const evaluationRoutes = require('./modules/evaluations/evaluation.routes');
 const competenceRoutes = require('./modules/evaluations/competence.routes');
 const calendarRoutes = require('./modules/calendar/event.routes');
 const roleRoutes = require('./modules/roles/role.routes');
+const userRoutes = require('./modules/users/user.routes');
 const invitationRoutes = require('./modules/invitations/invitation.routes');
 
 module.exports = (app) => {
@@ -48,5 +49,6 @@ module.exports = (app) => {
   app.use('/api/competences', competenceRoutes);
   app.use('/api/calendar', calendarRoutes);
   app.use('/api/roles', roleRoutes);
+  app.use('/api/users', userRoutes);
   app.use('/api/invitations', invitationRoutes);
 };

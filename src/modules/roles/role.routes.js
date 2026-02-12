@@ -12,5 +12,8 @@ router.get("/:roleId/users", roleController.getRoleUsers);
 
 router.post("/", roleController.createRole);
 router.put("/users/:userId/role", roleController.assignRole);
+router.put("/:id", roleController.updateRole);
+router.put("/:id/permissions", roleController.updateRolePermissions);
+router.delete("/:id", roleController.deleteRole);
 
 module.exports = router;

@@ -6,6 +6,19 @@ const Course = require("../courses/course.model");
    CREATE STUDENT
  ===================================================== */
 const createStudent = async (data) => {
+  // 🧹 Normalisation des données
+  if (data.gender) {
+    const g = data.gender.toUpperCase();
+    if (g === "M") data.gender = "MALE";
+    else if (g === "F") data.gender = "FEMALE";
+    else data.gender = g;
+  }
+  if (data.status) data.status = data.status.toUpperCase();
+  
+  // Mapping frontend names to back-end mongoose names if necessary
+  if (data.classId && !data.class) data.class = data.classId;
+  if (data.schoolId && !data.school) data.school = data.schoolId;
+
   const student = new Student(data);
   const savedStudent = await student.save();
 
@@ -109,6 +122,18 @@ const searchStudents = async (searchTerm, schoolId) => {
 const updateStudent = async (id, data) => {
   const oldStudent = await Student.findById(id);
   
+  // 🧹 Normalisation des données
+  if (data.gender) {
+    const g = data.gender.toUpperCase();
+    if (g === "M") data.gender = "MALE";
+    else if (g === "F") data.gender = "FEMALE";
+    else data.gender = g;
+  }
+  if (data.status) data.status = data.status.toUpperCase();
+  
+  if (data.classId && !data.class) data.class = data.classId;
+  if (data.schoolId && !data.school) data.school = data.schoolId;
+
   const student = await Student.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,

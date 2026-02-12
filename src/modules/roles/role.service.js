@@ -58,6 +58,70 @@ const getRoleUsers = async (roleId) => {
     .lean();
 };
 
+/* =====================================================
+   UPDATE ROLE
+===================================================== */
+const updateRole = async (id, data) => {
+  const { name, permissions } = data;
+  
+  const role = await Role.findByIdAndUpdate(
+    id,
+    { name },
+    { new: true, runValidators: true }
+  ).lean();
+  
+  if (!role) throw { statusCode: 404, message: "Rôle introuvable" };
+
+  // Update permissions if provided
+  if (permissions && Array.isArray(permissions)) {
+    // Delete existing permissions
+    await Permission.deleteMany({ roleId: id });
+    
+    // Insert new permissions
+    if (permissions.length > 0) {
+      const perms = permissions.map(p => ({ ...p, roleId: id }));
+      await Permission.insertMany(perms);
+    }
+  }
+
+  return role;
+};
+
+/* =====================================================
+   DELETE ROLE
+===================================================== */
+const deleteRole = async (id) => {
+  const role = await Role.findById(id);
+  if (!role) throw { statusCode: 404, message: "Rôle introuvable" };
+
+  // Delete associated permissions
+  await Permission.deleteMany({ roleId: id });
+  
+  // Delete role assignments
+  await UserRoleAssignment.deleteMany({ roleId: id });
+  
+  // Delete role
+  await Role.deleteOne({ _id: id });
+  
+  return true;
+};
+
+/* =====================================================
+   UPDATE ROLE PERMISSIONS
+===================================================== */
+const updateRolePermissions = async (roleId, permissions) => {
+  // Delete existing permissions
+  await Permission.deleteMany({ roleId });
+  
+  // Insert new permissions
+  if (permissions && permissions.length > 0) {
+    const perms = permissions.map(p => ({ ...p, roleId }));
+    await Permission.insertMany(perms);
+  }
+  
+  return await Permission.find({ roleId }).lean();
+};
+
 module.exports = {
   createRole,
   getRoles,
@@ -65,4 +129,7 @@ module.exports = {
   checkPermission,
   assignRole,
   getRoleUsers,
+  updateRole,
+  deleteRole,
+  updateRolePermissions,
 };
