@@ -17,7 +17,20 @@ const createRole = async (data) => {
 };
 
 const getRoles = async (schoolId) => {
-  return await Role.find({ schoolId }).lean();
+  const roles = await Role.find({ schoolId }).lean();
+  
+  // Fetch permissions for each role
+  const rolesWithPermissions = await Promise.all(
+    roles.map(async (role) => {
+      const permissions = await Permission.find({ roleId: role._id }).lean();
+      return {
+        ...role,
+        permissions: permissions || [],
+      };
+    })
+  );
+  
+  return rolesWithPermissions;
 };
 
 const getRoleById = async (id) => {
