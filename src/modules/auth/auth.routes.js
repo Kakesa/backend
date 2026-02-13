@@ -12,6 +12,8 @@ const {
   updatePermissions,
   deleteUser,
   getMe,
+  registerStudent,
+  changePassword,
 } = require('./auth.controller');
 
 const { registerValidation, loginValidation } = require('./auth.validation');
@@ -24,9 +26,11 @@ const { checkPermission } = require('../../middlewares/permission.middleware');
 // AUTH
 // -------------------------
 router.post('/register', registerValidation, validate, register);
+router.post('/register-student', registerStudent);
 router.post('/login', loginValidation, validate, login);
 router.post('/activate-otp', activateAccountWithOTP);
 router.post('/resend-otp', resendOTP);
+router.post('/change-password', protect, changePassword);
 router.get('/me', protect, getMe);
 
 // -------------------------

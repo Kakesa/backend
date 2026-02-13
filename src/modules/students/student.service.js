@@ -1,11 +1,12 @@
 const Student = require("./student.model");
 const Class = require("../classes/class.model");
 const Course = require("../courses/course.model");
+const User = require("../users/users.model");
 
 /* =====================================================
    CREATE STUDENT
  ===================================================== */
-const createStudent = async (data) => {
+const createStudent = async (data, createdByAdmin = false) => {
   // 🧹 Normalisation des données
   if (data.gender) {
     const g = data.gender.toUpperCase();
@@ -18,6 +19,39 @@ const createStudent = async (data) => {
   // Mapping frontend names to back-end mongoose names if necessary
   if (data.classId && !data.class) data.class = data.classId;
   if (data.schoolId && !data.school) data.school = data.schoolId;
+
+  // 🔐 Si créé par admin, créer un compte User avec mot de passe par défaut
+  let userId = null;
+  if (createdByAdmin && data.email) {
+    try {
+      // Vérifier si un utilisateur existe déjà avec cet email
+      const existingUser = await User.findOne({ email: data.email.toLowerCase().trim() });
+      
+      if (!existingUser) {
+        // Créer un nouveau User avec mot de passe par défaut
+        const newUser = await User.create({
+          name: `${data.firstName} ${data.lastName}`,
+          email: data.email.toLowerCase().trim(),
+          password: "12345", // Mot de passe par défaut
+          role: "student",
+          school: data.school,
+          isActive: true, // Pas besoin d'OTP pour les comptes créés par admin
+          mustChangePassword: true, // Forcer le changement de mot de passe
+        });
+        userId = newUser._id;
+      } else {
+        userId = existingUser._id;
+      }
+    } catch (err) {
+      console.error("❌ Erreur lors de la création du User:", err.message);
+      // Continue quand même la création de l'élève
+    }
+  }
+
+  // Ajouter userId au student si créé
+  if (userId) {
+    data.userId = userId;
+  }
 
   const student = new Student(data);
   const savedStudent = await student.save();

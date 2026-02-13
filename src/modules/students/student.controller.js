@@ -94,7 +94,10 @@ const createStudent = async (req, res, next) => {
       studentData.matricule = `STD-${year}-${String((count?.totalStudents || 0) + 1).padStart(3, "0")}`;
     }
 
-    const data = await studentService.createStudent(studentData);
+    // Vérifier si créé par admin ou enseignant
+    const createdByAdmin = req.user.role === "admin" || req.user.role === "superadmin" || req.user.role === "teacher";
+
+    const data = await studentService.createStudent(studentData, createdByAdmin);
     res.status(201).json({ success: true, data });
   } catch (err) {
     next(err);

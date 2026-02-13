@@ -128,7 +128,12 @@ const login = async ({ email, password }) => {
   if (!match) throw new Error('Email ou mot de passe incorrect');
 
   const token = signToken(user);
-  return { token, user };
+  
+  // Retourner le user avec mustChangePassword
+  const userObject = user.toObject();
+  delete userObject.password;
+  
+  return { token, user: userObject };
 };
 
 /* =====================================================
@@ -192,6 +197,75 @@ const deleteUser = async (id) => {
   if (!user) throw new Error('Utilisateur introuvable');
 };
 
+/* =====================================================
+   REGISTER STUDENT (Auto-inscription)
+===================================================== */
+const registerStudent = async ({ email, password, firstName, lastName, dateOfBirth, gender, phone }) => {
+  const Student = require('../students/student.model');
+  
+  // Vérifier si l'email existe déjà
+  const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+  if (existingUser) throw new Error('Un utilisateur avec cet email existe déjà');
+
+  const existingStudent = await Student.findOne({ email: email.toLowerCase().trim() });
+  if (existingStudent) throw new Error('Un élève avec cet email existe déjà');
+
+  const otpCode = generateOTP();
+  const otpExpires = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
+
+  // Créer le User
+  const user = await User.create({
+    email: email.toLowerCase().trim(),
+    name: `${firstName} ${lastName}`,
+    password, // hashé via pre('save') dans le model
+    role: 'student',
+    isActive: false,
+    otpCode,
+    otpExpires,
+    otpAttempts: 0,
+    mustChangePassword: false, // L'élève a choisi son propre mot de passe
+  });
+
+  // Créer le Student (sans école pour l'instant)
+  const student = await Student.create({
+    firstName,
+    lastName,
+    email: email.toLowerCase().trim(),
+    phone: phone || '',
+    dateOfBirth: new Date(dateOfBirth),
+    gender: gender.toUpperCase(),
+    userId: user._id,
+    status: 'INACTIVE', // Sera activé après validation OTP et rattachement à une école
+  });
+
+  try {
+    await sendActivationEmail(user.email, otpCode, user.name);
+  } catch (err) {
+    console.error('📧 OTP non envoyé :', err.message);
+  }
+
+  return { message: 'Compte élève créé. Code OTP envoyé.', studentId: student._id };
+};
+
+/* =====================================================
+   CHANGE PASSWORD
+===================================================== */
+const changePassword = async (userId, { oldPassword, newPassword }) => {
+  const user = await User.findById(userId).select('+password');
+  if (!user) throw new Error('Utilisateur introuvable');
+
+  // Vérifier l'ancien mot de passe
+  const match = await bcrypt.compare(oldPassword, user.password);
+  if (!match) throw new Error('Ancien mot de passe incorrect');
+
+  // Mettre à jour le mot de passe
+  user.password = newPassword; // Sera hashé via pre('save')
+  user.mustChangePassword = false;
+  await user.save();
+
+  return { message: 'Mot de passe changé avec succès' };
+};
+
 module.exports = {
   register,
   activateAccountWithOTP,
@@ -202,4 +276,6 @@ module.exports = {
   getAllUsers,
   updatePermissions,
   deleteUser,
+  registerStudent,
+  changePassword,
 };

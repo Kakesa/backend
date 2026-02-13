@@ -304,6 +304,51 @@ const getMe = async (req, res) => {
   });
 };
 
+/* =====================================================
+   REGISTER STUDENT (Auto-inscription)
+===================================================== */
+const registerStudent = async (req, res, next) => {
+  try {
+    const result = await authService.registerStudent(req.body);
+
+    res.status(201).json({
+      success: true,
+      message: result.message,
+      studentId: result.studentId,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   CHANGE PASSWORD
+===================================================== */
+const changePassword = async (req, res, next) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ancien et nouveau mot de passe requis',
+      });
+    }
+
+    const result = await authService.changePassword(req.user._id, {
+      oldPassword,
+      newPassword,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   register,
   activateAccountWithOTP,
@@ -315,4 +360,6 @@ module.exports = {
   updatePermissions,
   deleteUser,
   getMe,
+  registerStudent,
+  changePassword,
 };

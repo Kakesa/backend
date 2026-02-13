@@ -70,6 +70,11 @@ const studentSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   { timestamps: true }
 );
