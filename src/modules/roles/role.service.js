@@ -17,7 +17,9 @@ const createRole = async (data) => {
 };
 
 const getRoles = async (schoolId) => {
-  const roles = await Role.find({ schoolId }).lean();
+  // Build filter: if schoolId is provided, filter by it; otherwise get all roles
+  const filter = schoolId ? { schoolId } : {};
+  const roles = await Role.find(filter).lean();
   
   // Fetch permissions for each role
   const rolesWithPermissions = await Promise.all(
