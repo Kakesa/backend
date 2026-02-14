@@ -176,26 +176,9 @@ const joinSchoolWithCode = async (userId, schoolCode) => {
   return { message: 'Rattaché à l’école', schoolId: school._id };
 };
 
-/* =====================================================
-   ADMIN USERS
-===================================================== */
-const getAllUsers = async (page = 1, limit = 10) => {
-  const skip = (page - 1) * limit;
-  const data = await User.find().skip(skip).limit(limit);
-  const total = await User.countDocuments();
-  return { data, pagination: { page, limit, total } };
-};
+// Les fonctions getAllUsers, updatePermissions et deleteUser ont été déplacées 
+// vers le module 'users' pour une meilleure séparation des responsabilités.
 
-const updatePermissions = async (id, permissions) => {
-  const user = await User.findByIdAndUpdate(id, { permissions }, { new: true });
-  if (!user) throw new Error('Utilisateur introuvable');
-  return user;
-};
-
-const deleteUser = async (id) => {
-  const user = await User.findByIdAndDelete(id);
-  if (!user) throw new Error('Utilisateur introuvable');
-};
 
 /* =====================================================
    REGISTER STUDENT (Auto-inscription)
@@ -273,9 +256,6 @@ module.exports = {
   login,
   createSchool,
   joinSchoolWithCode,
-  getAllUsers,
-  updatePermissions,
-  deleteUser,
   registerStudent,
   changePassword,
 };

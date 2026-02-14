@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const authService = require('./auth.service');
 const User = require('../users/users.model');
+const userService = require('../users/user.service');
 const { createAudit } = require('../audit/audit.service');
 
 /* =====================================================
@@ -214,12 +215,12 @@ const getAllUsers = async (req, res, next) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    const result = await authService.getAllUsers(page, limit);
+    const result = await userService.getAllUsers({ page, limit });
 
     res.status(200).json({
       success: true,
-      data: result.data,
-      pagination: result.pagination,
+      data: result.users || result, // Handle different return structures
+      pagination: result.pagination || { page, limit },
     });
   } catch (err) {
     next(err);
@@ -239,9 +240,9 @@ const updatePermissions = async (req, res, next) => {
       });
     }
 
-    const user = await authService.updatePermissions(
+    const user = await userService.updateUser(
       req.params.id,
-      req.body.permissions
+      { permissions: req.body.permissions }
     );
 
     await createAudit({
@@ -278,7 +279,7 @@ const deleteUser = async (req, res, next) => {
       });
     }
 
-    await authService.deleteUser(req.params.id);
+    await userService.deleteUser(req.params.id);
 
     await createAudit({
       req,

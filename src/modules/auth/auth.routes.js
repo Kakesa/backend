@@ -39,30 +39,7 @@ router.get('/me', protect, getMe);
 router.post('/schools', protect, restrictTo('superadmin', 'admin'), createSchool);
 router.post('/schools/join', protect, joinSchoolWithCode);
 
-// -------------------------
-// USERS (ADMIN / SUPERADMIN)
-// -------------------------
-router.get(
-  '/users',
-  protect,
-  restrictTo('superadmin', 'admin'),
-  getAllUsers
-);
-
-router.put(
-  '/users/:id/permissions',
-  protect,
-  restrictTo('superadmin', 'admin'),
-  checkPermission('users', 'update'),
-  updatePermissions
-);
-
-router.delete(
-  '/users/:id',
-  protect,
-  restrictTo('superadmin', 'admin'),
-  checkPermission('users', 'delete'),
-  deleteUser
-);
+// NOTE: Les routes /api/auth/users sont obsolètes. 
+// Utilisez /api/users à la place.
 
 module.exports = router;

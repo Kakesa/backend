@@ -4,7 +4,7 @@ const User = require("./users.model");
    GET ALL USERS
 ===================================================== */
 const getAllUsers = async (query = {}) => {
-  const { schoolId, role, status } = query;
+  const { schoolId, role, status, page = 1, limit = 10 } = query;
   
   const filter = {};
   if (schoolId) filter.school = schoolId;
@@ -14,10 +14,14 @@ const getAllUsers = async (query = {}) => {
   const users = await User.find(filter)
     .populate("school", "name")
     .select("-password -otpCode -otpExpires")
+    .limit(limit * 1)
+    .skip((page - 1) * limit)
     .sort({ createdAt: -1 })
     .lean();
 
-  return users;
+  const total = await User.countDocuments(filter);
+
+  return { users, total, pagination: { page: Number(page), limit: Number(limit), total } };
 };
 
 /* =====================================================

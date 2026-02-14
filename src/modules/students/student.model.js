@@ -4,7 +4,6 @@ const studentSchema = new mongoose.Schema(
   {
     matricule: {
       type: String,
-      required: true,
       trim: true,
     },
     firstName: {
@@ -46,12 +45,10 @@ const studentSchema = new mongoose.Schema(
     class: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Class",
-      required: true,
     },
     school: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "School",
-      required: true,
     },
     enrollmentDate: {
       type: Date,

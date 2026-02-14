@@ -32,7 +32,7 @@ const createStudent = async (data, createdByAdmin = false) => {
         const newUser = await User.create({
           name: `${data.firstName} ${data.lastName}`,
           email: data.email.toLowerCase().trim(),
-          password: "12345", // Mot de passe par défaut
+          password: "123456", // Mot de passe par défaut (min 6 caractères)
           role: "student",
           school: data.school,
           isActive: true, // Pas besoin d'OTP pour les comptes créés par admin
