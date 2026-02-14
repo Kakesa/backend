@@ -173,7 +173,26 @@ const joinSchoolWithCode = async (userId, schoolCode) => {
   user.school = school._id;
   await user.save();
 
-  return { message: 'Rattaché à l’école', schoolId: school._id };
+  // 🔄 Mettre à jour le profil lié (Student ou Teacher)
+  if (user.role === 'student') {
+    const Student = require('../students/student.model');
+    await Student.findOneAndUpdate(
+      { userId: user._id },
+      { school: school._id, status: 'ACTIVE' }
+    );
+  } else if (user.role === 'teacher') {
+    const Teacher = require('../teachers/teacher.model');
+    await Teacher.findOneAndUpdate(
+      { userId: user._id },
+      { schoolId: school._id, status: 'ACTIVE' }
+    );
+  }
+
+  return { 
+    message: `Rattaché à l’école ${school.name}`, 
+    schoolId: school._id,
+    schoolName: school.name 
+  };
 };
 
 // Les fonctions getAllUsers, updatePermissions et deleteUser ont été déplacées 

@@ -14,6 +14,7 @@ const register = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: 'Compte créé. Un code OTP a été envoyé par email.',
+      data: { message: 'Compte créé' } 
     });
   } catch (err) {
     next(err);
@@ -151,60 +152,34 @@ const createSchool = async (req, res, next) => {
 /* =====================================================
    JOIN SCHOOL WITH CODE — Étape 4
 ===================================================== */
-const joinSchoolWithCode = async (userId, schoolCode) => {
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    throw {
-      statusCode: 400,
-      message: "Identifiant utilisateur invalide",
-    };
+const joinSchoolWithCode = async (req, res, next) => {
+  try {
+    const { schoolCode } = req.body;
+    if (!schoolCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Code école requis',
+      });
+    }
+
+    const result = await authService.joinSchoolWithCode(req.user._id, schoolCode);
+
+    await createAudit({
+      req,
+      action: 'JOIN_SCHOOL',
+      target: { type: 'School', id: result.schoolId },
+      before: null,
+      after: { userId: req.user._id, schoolId: result.schoolId },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result
+    });
+  } catch (err) {
+    next(err);
   }
-
-  //  Vérifier l'utilisateur
-  const user = await User.findById(userId);
-
-  if (!user) {
-    throw {
-      statusCode: 404,
-      message: "Utilisateur introuvable",
-    };
-  }
-
-  //  Déjà rattaché
-  if (user.school) {
-    throw {
-      statusCode: 403,
-      message:
-        "Vous êtes déjà rattaché à une école. Contactez l'administration.",
-    };
-  }
-
-  //  Vérifier l'école
-  const school = await School.findOne({
-    code: schoolCode,
-    status: "active",
-  });
-
-  if (!school) {
-    throw {
-      statusCode: 404,
-      message: "Code école invalide ou école inactive",
-    };
-  }
-
-  //  Lier user → school
-  user.school = school.id;
-  user.needsSchoolSetup = false;
-  await user.save();
-
-  //  Lier school → user
-  await School.findByIdAndUpdate(school.id, {
-    $addToSet: { users: user.id },
-  });
-
-  return {
-    message: `Vous avez rejoint l'école ${school.name}`,
-    schoolId: school._id,
-  };
 };
 
 /* =====================================================
@@ -315,7 +290,10 @@ const registerStudent = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: result.message,
-      studentId: result.studentId,
+      data: { 
+        studentId: result.studentId,
+        message: result.message
+      }
     });
   } catch (err) {
     next(err);

@@ -57,6 +57,11 @@ const teacherSchema = new mongoose.Schema(
         ref: "Class",
       },
     ],
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   {
     timestamps: true,

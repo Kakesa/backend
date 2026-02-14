@@ -29,7 +29,17 @@ const getTeacherById = async (req, res, next) => {
 ===================================================== */
 const createTeacher = async (req, res, next) => {
   try {
-    const data = await teacherService.createTeacher(req.body);
+    const teacherData = { ...req.body };
+    
+    // Auto-fill schoolId from user session if not provided
+    if (!teacherData.schoolId && (req.user.school || req.user.schoolId)) {
+      teacherData.schoolId = req.user.school || req.user.schoolId;
+    }
+
+    // Déterminer si créé par admin
+    const createdByAdmin = req.user.role === "admin" || req.user.role === "superadmin";
+
+    const data = await teacherService.createTeacher(teacherData, createdByAdmin);
     res.status(201).json({ success: true, data });
   } catch (err) {
     next(err);
