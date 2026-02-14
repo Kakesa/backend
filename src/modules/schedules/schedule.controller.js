@@ -27,6 +27,20 @@ const getSchedulesByTeacher = async (req, res, next) => {
   }
 };
 
+const getMySchedules = async (req, res, next) => {
+  try {
+    const Teacher = require("../teachers/teacher.model");
+    const teacher = await Teacher.findOne({ userId: req.user._id });
+    if (!teacher) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+    const data = await scheduleService.getSchedules({ teacherId: teacher._id });
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const getSchedulesByRoom = async (req, res, next) => {
   try {
     const data = await scheduleService.getSchedules({ roomId: req.params.room });
@@ -76,6 +90,7 @@ module.exports = {
   getSchedules,
   getSchedulesByClass,
   getSchedulesByTeacher,
+  getMySchedules,
   getSchedulesByRoom,
   checkConflicts,
   createSchedule,

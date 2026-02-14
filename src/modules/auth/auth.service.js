@@ -9,8 +9,7 @@ const MAX_OTP_ATTEMPTS = 5;
 
 /* ================= HELPERS ================= */
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
-const generateSchoolCode = () =>
-  Math.random().toString(36).substring(2, 8).toUpperCase();
+const { generateSchoolCode } = require('../schools/school.utils');
 
 const signToken = (user) =>
   jwt.sign(
@@ -147,8 +146,9 @@ const createSchool = async (userId, { name }) => {
 
   const school = await School.create({
     name,
-    code: generateSchoolCode(),
+    code: await generateSchoolCode(),
     admin: user._id,
+    createdBy: user._id, // Assurer que createdBy est présent
   });
 
   user.role = 'admin';
@@ -189,7 +189,7 @@ const joinSchoolWithCode = async (userId, schoolCode) => {
   }
 
   return { 
-    message: `Rattaché à l’école ${school.name}`, 
+    message: `Opération réussie avec succès ! Vous pouvez maintenant accéder à votre espace dans l'école ${school.name}.`, 
     schoolId: school._id,
     schoolName: school.name 
   };

@@ -7,6 +7,7 @@ const { protect } = require("../../middlewares/auth.middleware");
 router.use(protect);
 
 router.get("/", teacherController.getAllTeachers);
+router.get("/me", teacherController.getMe);
 router.get("/:id", teacherController.getTeacherById);
 router.post("/", teacherController.createTeacher);
 router.put("/:id", teacherController.updateTeacher);

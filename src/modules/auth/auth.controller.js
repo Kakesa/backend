@@ -48,8 +48,10 @@ const activateAccountWithOTP = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: result.message,
-      token: result.token,
-      user,
+      data: {
+        token: result.token,
+        user,
+      }
     });
   } catch (err) {
     next(err);
@@ -74,6 +76,7 @@ const resendOTP = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: result.message,
+      data: result
     });
   } catch (err) {
     next(err);
@@ -322,6 +325,7 @@ const changePassword = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: result.message,
+      data: result
     });
   } catch (err) {
     next(err);

@@ -54,6 +54,15 @@ const deleteNotification = async (req, res, next) => {
   }
 };
 
+const notifyNewUserJoined = async (req, res, next) => {
+  try {
+    const data = await notificationService.notifyNewUserJoined(req.body);
+    res.status(201).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getNotificationsByUser,
   getUnreadNotifications,
@@ -61,4 +70,5 @@ module.exports = {
   markAsRead,
   markAllAsRead,
   deleteNotification,
+  notifyNewUserJoined,
 };

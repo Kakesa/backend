@@ -42,10 +42,31 @@ const deleteNotification = async (id) => {
   return await Notification.deleteOne({ _id: id });
 };
 
+/* =====================================================
+   NOTIFY NEW USER JOINED
+===================================================== */
+const notifyNewUserJoined = async (data) => {
+  const School = require("../schools/school.model");
+  const school = await School.findById(data.schoolId);
+  if (!school) throw new Error("École introuvable");
+
+  // Créer une notification pour l'admin de l'école
+  const notification = new Notification({
+    userId: school.admin,
+    title: "Nouvelle inscription",
+    message: `${data.userName} (${data.userRole}) vient de rejoindre votre établissement : ${data.schoolName}.`,
+    type: "info",
+    link: `/dashboard/users/${data.userId}`,
+  });
+
+  return await notification.save();
+};
+
 module.exports = {
   createNotification,
   getNotificationsByUser,
   markAsRead,
   markAllAsRead,
   deleteNotification,
+  notifyNewUserJoined,
 };

@@ -78,6 +78,20 @@ const getTeacherById = async (id) => {
 };
 
 /* =====================================================
+   GET TEACHER BY USER ID
+===================================================== */
+const getTeacherByUserId = async (userId) => {
+  const teacher = await Teacher.findOne({ userId })
+    .populate("subjects", "name code")
+    .populate("classes", "name level")
+    .lean();
+  
+  // Si le prof n'existe pas encore (compte User créé mais profil Teacher manquant)
+  // On ne throw pas forcément d'erreur, on peut renvoyer null pour que le front gère
+  return teacher;
+};
+
+/* =====================================================
    UPDATE TEACHER
 ===================================================== */
 const updateTeacher = async (id, data) => {
@@ -113,6 +127,7 @@ module.exports = {
   createTeacher,
   getAllTeachers,
   getTeacherById,
+  getTeacherByUserId,
   updateTeacher,
   deleteTeacher,
 };

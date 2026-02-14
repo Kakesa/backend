@@ -6,6 +6,7 @@ const { protect } = require("../../middlewares/auth.middleware");
 router.use(protect);
 
 router.get("/", scheduleController.getSchedules);
+router.get("/me", scheduleController.getMySchedules);
 router.get("/class/:classId", scheduleController.getSchedulesByClass);
 router.get("/teacher/:teacherId", scheduleController.getSchedulesByTeacher);
 router.get("/room/:room", scheduleController.getSchedulesByRoom);

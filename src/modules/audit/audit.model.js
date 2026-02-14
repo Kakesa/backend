@@ -17,6 +17,8 @@ const auditSchema = new mongoose.Schema(
         'UPDATE_PERMISSIONS',
         'DELETE_USER',
         'LOGIN',
+        'CREATE_SCHOOL',
+        'JOIN_SCHOOL',
       ],
     },
 
