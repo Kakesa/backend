@@ -23,6 +23,7 @@ const calendarRoutes = require('./modules/calendar/event.routes');
 const roleRoutes = require('./modules/roles/role.routes');
 const userRoutes = require('./modules/users/user.routes');
 const invitationRoutes = require('./modules/invitations/invitation.routes');
+const feeRoutes = require('./modules/fees/fee.routes');
 
 module.exports = (app) => {
   app.use('/api/auth', authRoutes);
@@ -51,4 +52,5 @@ module.exports = (app) => {
   app.use('/api/roles', roleRoutes);
   app.use('/api/users', userRoutes);
   app.use('/api/invitations', invitationRoutes);
+  app.use('/api/fees', feeRoutes);
 };
