@@ -24,7 +24,7 @@ const createTeacher = async (data, createdByAdmin = false) => {
       
       if (!existingUser) {
         const newUser = await User.create({
-          name: `${data.firstName} ${data.lastName}`,
+          name: "Professeur", // Nom générique pour centraliser le profil dans la table Teacher
           email: data.email.toLowerCase().trim(),
           password: "123456", // Mot de passe par défaut
           role: "teacher",

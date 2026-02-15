@@ -277,10 +277,31 @@ const deleteUser = async (req, res, next) => {
 };
 
 const getMe = async (req, res) => {
-  res.status(200).json({
-    success: true,
-    data: req.user,
-  });
+  try {
+    const userObject = req.user.toObject();
+    let linkedProfile = null;
+
+    if (userObject.role === 'teacher') {
+      const Teacher = require('../teachers/teacher.model');
+      linkedProfile = await Teacher.findOne({ userId: userObject._id });
+    } else if (userObject.role === 'student') {
+      const Student = require('../students/student.model');
+      linkedProfile = await Student.findOne({ userId: userObject._id });
+    } else if (userObject.role === 'parent') {
+      const Parent = require('../parents/parent.model');
+      linkedProfile = await Parent.findOne({ userId: userObject._id });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...userObject,
+        linkedProfile
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
 
 /* =====================================================

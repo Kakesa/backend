@@ -8,7 +8,15 @@ const getAllUsers = async (query = {}) => {
   
   const filter = {};
   if (schoolId) filter.school = schoolId;
-  if (role) filter.role = role;
+  
+  if (role) {
+    filter.role = role;
+  } else {
+    // Par défaut, on exclut les profs, élèves et parents de la liste "Utilisateurs"
+    // car ils sont gérés dans leurs propres modules.
+    filter.role = { $nin: ['teacher', 'student', 'parent'] };
+  }
+  
   if (status !== undefined) filter.isActive = status === "active";
 
   const users = await User.find(filter)
