@@ -35,6 +35,13 @@ const createParent = async (data, createdByAdmin = false) => {
     data.userId = userId;
   }
 
+  // 🆔 Générer un matricule si absent
+  if (!data.matricule) {
+    const year = new Date().getFullYear();
+    const count = await Parent.countDocuments({ schoolId: data.schoolId });
+    data.matricule = `PAR-${year}-${String(count + 1).padStart(3, '0')}`;
+  }
+
   const parent = new Parent(data);
   return await parent.save();
 };
@@ -55,9 +62,30 @@ const getAllParents = async (query = {}) => {
   const filter = {};
   if (schoolId) filter.schoolId = schoolId;
 
-  return await Parent.find(filter)
+  const parents = await Parent.find(filter)
     .sort({ lastName: 1, firstName: 1 })
     .lean();
+
+  // Enrich parents with relationship and children IDs to avoid UI crashes
+  const enrichedParents = await Promise.all(parents.map(async (parent) => {
+    const links = await ParentStudent.find({ parentId: parent._id })
+      .populate("studentId", "firstName lastName")
+      .lean();
+    
+    return {
+      ...parent,
+      id: parent._id, // Add id for frontend compatibility
+      childrenIds: links.map(l => l.studentId?._id?.toString() || l.studentId?.toString()),
+      children: links.map(l => ({
+        id: l.studentId?._id,
+        name: l.studentId ? `${l.studentId.firstName} ${l.studentId.lastName}` : "Inconnu"
+      })),
+      relationship: links.length > 0 ? links[0].relation : "Parent",
+      registrationDate: parent.createdAt // Fallback for UI
+    };
+  }));
+
+  return enrichedParents;
 };
 
 /* =====================================================

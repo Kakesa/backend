@@ -27,6 +27,20 @@ const parentSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    profession: {
+      type: String,
+      trim: true,
+    },
+    matricule: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
     schoolId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "School",
