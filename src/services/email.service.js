@@ -13,9 +13,6 @@ const transporter = nodemailer.createTransport({
 
 /**
  * Envoyer email d’activation
- * @param {string} to email destinataire
- * @param {string} token token d’activation
- *  @param {string} name nom de l’utilisateur pour saluer
  */
 const sendActivationEmail = async (to, code, name) => {
   await transporter.sendMail({
@@ -31,5 +28,23 @@ const sendActivationEmail = async (to, code, name) => {
   });
 };
 
+/**
+ * Envoyer email de rappel de frais
+ */
+const sendFeeReminderEmail = async (to, studentName, feeName, balance) => {
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to,
+    subject: `Rappel de paiement : ${feeName}`,
+    html: `
+      <p>Bonjour,</p>
+      <p>Ceci est un rappel concernant les frais scolaires de <strong>${studentName}</strong> pour <strong>${feeName}</strong>.</p>
+      <p>Il reste un solde impayé de : <strong>${balance} USD</strong>.</p>
+      <p>Veuillez régulariser la situation dès que possible. Si vous avez déjà effectué le paiement, merci d'ignorer cet e-mail.</p>
+      <p>Cordialement,</p>
+      <p>L'administration</p>
+    `,
+  });
+};
 
-module.exports = { sendActivationEmail };
+module.exports = { sendActivationEmail, sendFeeReminderEmail };

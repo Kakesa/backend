@@ -2,6 +2,7 @@ const Student = require("./student.model");
 const Class = require("../classes/class.model");
 const Course = require("../courses/course.model");
 const User = require("../users/users.model");
+const feeService = require("../fees/fee.service");
 
 /* =====================================================
    CREATE STUDENT
@@ -23,28 +24,30 @@ const createStudent = async (data, createdByAdmin = false) => {
   // 🔐 Si créé par admin, créer un compte User avec mot de passe par défaut
   let userId = null;
   if (createdByAdmin && data.email) {
-    try {
-      // Vérifier si un utilisateur existe déjà avec cet email
-      const existingUser = await User.findOne({ email: data.email.toLowerCase().trim() });
-      
-      if (!existingUser) {
-        // Créer un nouveau User avec mot de passe par défaut
-        const newUser = await User.create({
-          name: `${data.firstName} ${data.lastName}`,
-          email: data.email.toLowerCase().trim(),
-          password: "123456", // Mot de passe par défaut (min 6 caractères)
-          role: "student",
-          school: data.school,
-          isActive: true, // Pas besoin d'OTP pour les comptes créés par admin
-          mustChangePassword: true, // Forcer le changement de mot de passe
-        });
-        userId = newUser._id;
-      } else {
-        userId = existingUser._id;
+    // Vérifier si un utilisateur existe déjà avec cet email
+    const existingUser = await User.findOne({ email: data.email.toLowerCase().trim() });
+    
+    if (!existingUser) {
+      // Créer un nouveau User avec mot de passe par défaut
+      const newUser = await User.create({
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email.toLowerCase().trim(),
+        password: "123456", // Mot de passe par défaut (min 6 caractères)
+        role: "student",
+        school: data.school,
+        isActive: true, // Pas besoin d'OTP pour les comptes créés par admin
+        mustChangePassword: true, // Forcer le changement de mot de passe
+      });
+      userId = newUser._id;
+    } else {
+      userId = existingUser._id;
+      // S'assurer que le rôle est correct et que l'utilisateur est actif
+      if (existingUser.role !== 'student') {
+        existingUser.role = 'student';
       }
-    } catch (err) {
-      console.error("❌ Erreur lors de la création du User:", err.message);
-      // Continue quand même la création de l'élève
+      existingUser.isActive = true;
+      existingUser.school = data.school;
+      await existingUser.save();
     }
   }
 
@@ -86,6 +89,13 @@ const getAllStudents = async (query = {}, options = {}) => {
 
   const total = await Student.countDocuments(filter);
 
+  // Add payment status if requested
+  if (options.includePaymentStatus) {
+    for (let student of students) {
+      student.paymentStatus = await feeService.checkStudentPaymentStatus(student._id);
+    }
+  }
+
   return {
     students,
     totalPages: Math.ceil(total / limit),
@@ -104,16 +114,30 @@ const getStudentById = async (id) => {
     .lean();
   
   if (!student) throw { statusCode: 404, message: "Élève introuvable" };
+
+  // Add payment status if requested
+  if (options && options.includePaymentStatus) {
+    student.paymentStatus = await feeService.checkStudentPaymentStatus(student._id);
+  }
+
   return student;
 };
 
 /* =====================================================
    GET STUDENTS BY CLASS
  ===================================================== */
-const getStudentsByClass = async (classId) => {
-  return await Student.find({ class: classId })
+const getStudentsByClass = async (classId, options = {}) => {
+  const students = await Student.find({ class: classId })
     .populate("class", "name")
     .lean();
+
+  if (options.includePaymentStatus) {
+    for (let student of students) {
+      student.paymentStatus = await feeService.checkStudentPaymentStatus(student._id);
+    }
+  }
+
+  return students;
 };
 
 /* =====================================================

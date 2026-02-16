@@ -19,25 +19,28 @@ const createTeacher = async (data, createdByAdmin = false) => {
   // 🔐 Si créé par admin, créer un compte User avec mot de passe par défaut
   let userId = null;
   if (createdByAdmin && data.email) {
-    try {
-      const existingUser = await User.findOne({ email: data.email.toLowerCase().trim() });
-      
-      if (!existingUser) {
-        const newUser = await User.create({
-          name: "Professeur", // Nom générique pour centraliser le profil dans la table Teacher
-          email: data.email.toLowerCase().trim(),
-          password: "123456", // Mot de passe par défaut
-          role: "teacher",
-          school: data.schoolId || data.school,
-          isActive: true,
-          mustChangePassword: true,
-        });
-        userId = newUser._id;
-      } else {
-        userId = existingUser._id;
+    const existingUser = await User.findOne({ email: data.email.toLowerCase().trim() });
+    
+    if (!existingUser) {
+      const newUser = await User.create({
+        name: `${data.firstName} ${data.lastName}`, 
+        email: data.email.toLowerCase().trim(),
+        password: "123456", // Mot de passe par défaut
+        role: "teacher",
+        school: data.schoolId || data.school,
+        isActive: true,
+        mustChangePassword: true,
+      });
+      userId = newUser._id;
+    } else {
+      userId = existingUser._id;
+      // S'assurer que le rôle est correct et que l'utilisateur est actif
+      if (existingUser.role !== 'teacher') {
+        existingUser.role = 'teacher';
       }
-    } catch (err) {
-      console.error("❌ Erreur lors de la création du User (Prof):", err.message);
+      existingUser.isActive = true;
+      existingUser.school = data.schoolId || data.school;
+      await existingUser.save();
     }
   }
 

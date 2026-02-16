@@ -7,10 +7,17 @@ const getAllStudents = async (req, res, next) => {
   try {
     const filters = { ...req.query };
     // If not superadmin/admin, restrict by school
+    const schoolId = req.user.school || req.user.schoolId;
     if (req.user.role !== "superadmin") {
-      filters.schoolId = req.user.school || req.user.schoolId;
+      filters.schoolId = schoolId;
     }
-    const data = await studentService.getAllStudents(filters);
+
+    // Include payment status for teachers and admins
+    const options = {
+      includePaymentStatus: ["teacher", "admin", "superadmin"].includes(req.user.role)
+    };
+
+    const data = await studentService.getAllStudents(filters, options);
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -22,7 +29,10 @@ const getAllStudents = async (req, res, next) => {
 ===================================================== */
 const getStudentById = async (req, res, next) => {
   try {
-    const data = await studentService.getStudentById(req.params.id);
+    const options = {
+      includePaymentStatus: ["teacher", "admin", "superadmin", "parent", "student"].includes(req.user.role)
+    };
+    const data = await studentService.getStudentById(req.params.id, options);
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -34,7 +44,10 @@ const getStudentById = async (req, res, next) => {
 ===================================================== */
 const getStudentsByClass = async (req, res, next) => {
   try {
-    const data = await studentService.getStudentsByClass(req.params.classId);
+    const options = {
+      includePaymentStatus: ["teacher", "admin", "superadmin"].includes(req.user.role)
+    };
+    const data = await studentService.getStudentsByClass(req.params.classId, options);
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);

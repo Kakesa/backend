@@ -35,9 +35,11 @@ const createFeeDefinition = async (data) => {
    GET STUDENT FEES
 ===================================================== */
 const getStudentFees = async (studentId) => {
-  return await StudentFee.find({ studentId })
+  const fees = await StudentFee.find({ studentId })
     .populate("feeDefinitionId")
     .lean();
+  
+  return fees.map(f => ({ ...f, id: f._id }));
 };
 
 /* =====================================================
@@ -74,22 +76,57 @@ const recordPayment = async (data) => {
 /* =====================================================
    SEND REMINDER
 ===================================================== */
-const sendReminder = async (studentFeeId) => {
+const sendReminder = async (studentFeeId, senderId) => {
+  const mongoose = require("mongoose");
+  if (!mongoose.Types.ObjectId.isValid(studentFeeId)) {
+    throw new Error("ID de frais invalide");
+  }
+
   const studentFee = await StudentFee.findById(studentFeeId)
-    .populate("studentId")
+    .populate({
+      path: "studentId",
+      populate: { path: "userId" }
+    })
     .populate("feeDefinitionId");
 
   if (!studentFee) throw new Error("Frais introuvable");
 
-  // Envoyer notification (Logique simplifiée pour l'instant)
-  // En situation réelle, on chercherait le userId du student ou du parent
-  if (studentFee.studentId.userId) {
+  const student = studentFee.studentId;
+  const studentName = `${student.firstName} ${student.lastName}`;
+  const feeName = studentFee.feeDefinitionId.name;
+  const balance = studentFee.balance;
+
+  // 1. Notification interne (App)
+  if (student.userId) {
     await createNotification({
-      recipient: studentFee.studentId.userId,
+      recipient: student.userId._id,
       title: "Rappel de paiement",
-      message: `Rappel : Il reste un solde de ${studentFee.balance} USD pour ${studentFee.feeDefinitionId.name}.`,
+      message: `Rappel : Il reste un solde de ${balance} USD pour ${feeName}.`,
       type: "FEE_REMINDER",
     });
+
+    // Optionnel : Envoyer aussi un Message interne
+    try {
+      const { sendMessage } = require("../messages/message.service");
+      await sendMessage({
+        senderId: senderId, 
+        recipientId: student.userId._id,
+        content: `Ceci est un rappel automatique concernant les frais : ${feeName}. Solde restant : ${balance} USD.`,
+        subject: "Rappel Frais Scolaires"
+      });
+    } catch (msgErr) {
+      console.error("Erreur envoi message interne:", msgErr.message);
+    }
+  }
+
+  // 2. Email (si disponible)
+  if (student.email) {
+    try {
+      const { sendFeeReminderEmail } = require("../../services/email.service");
+      await sendFeeReminderEmail(student.email, studentName, feeName, balance);
+    } catch (emailErr) {
+      console.error("Erreur envoi email:", emailErr.message);
+    }
   }
 
   studentFee.lastReminderDate = new Date();
@@ -117,12 +154,31 @@ const getAllFeeStatuses = async (schoolId, query = {}) => {
     .populate("feeDefinitionId")
     .lean();
 
-  // Filtrer par classe si nécessaire (car populate ne filtre pas la requête principale facilement ici)
+  const normalizedResults = results.map(r => ({ ...r, id: r._id }));
+
+  // Filtrer par classe si nécessaire
   if (classId) {
-    return results.filter(r => r.studentId && r.studentId.class && r.studentId.class._id.toString() === classId);
+    return normalizedResults.filter(r => r.studentId && r.studentId.class && r.studentId.class._id.toString() === classId);
   }
 
-  return results;
+  return normalizedResults;
+};
+
+/* =====================================================
+   CHECK STUDENT PAYMENT STATUS (FOR TEACHERS/STAFF)
+===================================================== */
+const checkStudentPaymentStatus = async (studentId) => {
+  const fees = await StudentFee.find({ studentId });
+  
+  if (fees.length === 0) return { isPaid: true, status: "NO_FEES" };
+
+  const unpaidFees = fees.filter(f => f.status !== "PAID");
+  
+  return {
+    isPaid: unpaidFees.length === 0,
+    status: unpaidFees.length === 0 ? "PAID" : "UNPAID",
+    unpaidCount: unpaidFees.length
+  };
 };
 
 module.exports = {
@@ -131,4 +187,5 @@ module.exports = {
   recordPayment,
   sendReminder,
   getAllFeeStatuses,
+  checkStudentPaymentStatus,
 };

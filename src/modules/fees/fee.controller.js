@@ -47,7 +47,8 @@ const recordPayment = async (req, res, next) => {
 ===================================================== */
 const sendReminder = async (req, res, next) => {
   try {
-    await feeService.sendReminder(req.params.studentFeeId);
+    const senderId = req.user._id;
+    await feeService.sendReminder(req.params.studentFeeId, senderId);
     res.status(200).json({ success: true, message: "Rappel envoyé avec succès" });
   } catch (err) {
     next(err);

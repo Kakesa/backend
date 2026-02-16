@@ -116,7 +116,7 @@ const resendOTP = async (email) => {
 const login = async ({ email, password }) => {
   const user = await User.findOne({ email }).select('+password');
 
-  if (!user) throw new Error('Email ou mot de passe incorrect');
+  if (!user) throw new Error('Utilisateur non trouvé (Email inconnu)');
 
   // 🔥 SUPER ADMIN BYPASS OTP
   if (user.role !== 'superadmin' && !user.isActive) {
@@ -124,7 +124,7 @@ const login = async ({ email, password }) => {
   }
 
   const match = await bcrypt.compare(password, user.password);
-  if (!match) throw new Error('Email ou mot de passe incorrect');
+  if (!match) throw new Error('Mot de passe incorrect');
 
   const token = signToken(user);
   
