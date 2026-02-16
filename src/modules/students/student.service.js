@@ -3,6 +3,7 @@ const Class = require("../classes/class.model");
 const Course = require("../courses/course.model");
 const User = require("../users/users.model");
 const feeService = require("../fees/fee.service");
+const parentService = require("../parents/parent.service");
 
 /* =====================================================
    CREATE STUDENT
@@ -64,6 +65,26 @@ const createStudent = async (data, createdByAdmin = false) => {
     await Class.findByIdAndUpdate(savedStudent.class, {
       $addToSet: { students: savedStudent._id },
     });
+  }
+
+  // 👨‍👩‍👧‍👦 Gérer la création/liaison du parent si spécifié
+  if (data.parentEmail && data.parentFirstName && data.parentLastName) {
+    try {
+      const parentData = {
+        firstName: data.parentFirstName,
+        lastName: data.parentLastName,
+        email: data.parentEmail,
+        phone: data.parentPhone || "",
+        address: data.address || "",
+        schoolId: data.school,
+      };
+
+      const parent = await parentService.createParent(parentData, createdByAdmin);
+      await parentService.linkChild(parent._id, savedStudent._id, data.parentRelation || "PARENT");
+    } catch (parentErr) {
+      console.error("Erreur création parent lors de l'inscription:", parentErr.message);
+      // On ne throw pas d'erreur pour ne pas bloquer l'inscription de l'élève
+    }
   }
 
   return savedStudent;

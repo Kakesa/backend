@@ -1,9 +1,40 @@
 const { Parent, ParentStudent } = require("./parent.model");
+const User = require("../users/users.model");
 
 /* =====================================================
    CREATE PARENT
 ===================================================== */
-const createParent = async (data) => {
+const createParent = async (data, createdByAdmin = false) => {
+  // 🔐 Si créé par admin ou via inscription, créer un compte User
+  let userId = null;
+  if (data.email) {
+    const existingUser = await User.findOne({ email: data.email.toLowerCase().trim() });
+    
+    if (!existingUser) {
+      const newUser = await User.create({
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email.toLowerCase().trim(),
+        password: "123456", // Mot de passe par défaut
+        role: "parent",
+        school: data.schoolId,
+        isActive: true,
+        mustChangePassword: true,
+      });
+      userId = newUser._id;
+    } else {
+      userId = existingUser._id;
+      // S'assurer que le rôle est correct
+      if (existingUser.role !== 'parent') {
+        existingUser.role = 'parent';
+        await existingUser.save();
+      }
+    }
+  }
+
+  if (userId) {
+    data.userId = userId;
+  }
+
   const parent = new Parent(data);
   return await parent.save();
 };

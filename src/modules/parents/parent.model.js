@@ -32,6 +32,11 @@ const parentSchema = new mongoose.Schema(
       ref: "School",
       required: true,
     },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   {
     timestamps: true,

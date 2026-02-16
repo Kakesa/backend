@@ -5,7 +5,8 @@ const parentService = require("./parent.service");
 ===================================================== */
 const getAllParents = async (req, res, next) => {
   try {
-    const data = await parentService.getAllParents(req.query);
+    const schoolId = req.user.school || req.user.schoolId;
+    const data = await parentService.getAllParents({ schoolId });
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -29,8 +30,9 @@ const getParentById = async (req, res, next) => {
 ===================================================== */
 const createParent = async (req, res, next) => {
   try {
-    const data = await parentService.createParent(req.body);
-    res.status(201).json({ success: true, data });
+    const data = { ...req.body, schoolId: req.user.school || req.user.schoolId };
+    const parent = await parentService.createParent(data, true);
+    res.status(201).json({ success: true, data: parent });
   } catch (err) {
     next(err);
   }
