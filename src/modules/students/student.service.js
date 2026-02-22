@@ -101,7 +101,7 @@ const getAllStudents = async (query = {}, options = {}) => {
   if (classId) filter.class = classId;
 
   const students = await Student.find(filter)
-    .populate("class", "name")
+    .populate("class", "name section academicYear")
     .populate("school", "name")
     .limit(limit * 1)
     .skip((page - 1) * limit)
@@ -130,7 +130,7 @@ const getAllStudents = async (query = {}, options = {}) => {
  ===================================================== */
 const getStudentById = async (id, options = {}) => {
   const student = await Student.findById(id)
-    .populate("class", "name")
+    .populate("class", "name section academicYear")
     .populate("school", "name")
     .lean();
   
@@ -149,7 +149,7 @@ const getStudentById = async (id, options = {}) => {
  ===================================================== */
 const getStudentsByClass = async (classId, options = {}) => {
   const students = await Student.find({ class: classId })
-    .populate("class", "name")
+    .populate("class", "name section academicYear")
     .lean();
 
   if (options.includePaymentStatus) {
@@ -191,7 +191,7 @@ const searchStudents = async (searchTerm, schoolId) => {
   };
 
   return await Student.find(filter)
-    .populate("class", "name")
+    .populate("class", "name section academicYear")
     .lean();
 };
 
