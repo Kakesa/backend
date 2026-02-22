@@ -81,6 +81,15 @@ const deleteMessage = async (req, res, next) => {
   }
 };
 
+const getContacts = async (req, res, next) => {
+  try {
+    const data = await messageService.getContacts(req.user._id, req.user.school);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMessagesByUser,
   getInbox,
@@ -91,4 +100,5 @@ module.exports = {
   markAllAsRead,
   archiveMessage,
   deleteMessage,
+  getContacts,
 };

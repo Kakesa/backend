@@ -1,4 +1,5 @@
 const Message = require("./message.model");
+const User = require("../users/users.model");
 
 /* =====================================================
    SEND MESSAGE
@@ -15,8 +16,8 @@ const getMessagesByUser = async (userId) => {
   return await Message.find({
     $or: [{ senderId: userId }, { recipientId: userId }]
   })
-    .populate("senderId", "firstName lastName email")
-    .populate("recipientId", "firstName lastName email")
+    .populate("senderId", "name email role")
+    .populate("recipientId", "name email role")
     .sort({ createdAt: -1 })
     .lean();
 };
@@ -26,7 +27,7 @@ const getMessagesByUser = async (userId) => {
 ===================================================== */
 const getInbox = async (userId) => {
   return await Message.find({ recipientId: userId, isArchived: false })
-    .populate("senderId", "firstName lastName email")
+    .populate("senderId", "name email role")
     .sort({ createdAt: -1 })
     .lean();
 };
@@ -36,7 +37,7 @@ const getInbox = async (userId) => {
 ===================================================== */
 const getSent = async (userId) => {
   return await Message.find({ senderId: userId })
-    .populate("recipientId", "firstName lastName email")
+    .populate("recipientId", "name email role")
     .sort({ createdAt: -1 })
     .lean();
 };
@@ -76,6 +77,30 @@ const deleteMessage = async (id) => {
   return await Message.deleteOne({ _id: id });
 };
 
+/* =====================================================
+   GET CONTACTS (users contactables)
+===================================================== */
+const getContacts = async (currentUserId, schoolId) => {
+  const filter = {
+    _id: { $ne: currentUserId },
+    role: { $in: ["admin", "teacher", "parent"] },
+    isActive: true,
+  };
+  if (schoolId) filter.school = schoolId;
+
+  const users = await User.find(filter)
+    .select("name email role")
+    .sort({ role: 1, name: 1 })
+    .lean();
+
+  return users.map((u) => ({
+    id: u._id.toString(),
+    name: u.name,
+    email: u.email,
+    role: u.role,
+  }));
+};
+
 module.exports = {
   sendMessage,
   getMessagesByUser,
@@ -86,4 +111,5 @@ module.exports = {
   markAllAsRead,
   archiveMessage,
   deleteMessage,
+  getContacts,
 };
