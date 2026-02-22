@@ -92,16 +92,35 @@ const getAllParents = async (query = {}) => {
    GET PARENT BY ID (WITH CHILDREN)
 ===================================================== */
 const getParentById = async (id) => {
-  const parent = await Parent.findById(id).lean();
+  // Try findById first, then fallback to userId lookup
+  let parent = null;
+  try {
+    parent = await Parent.findById(id).lean();
+  } catch (e) {
+    // Invalid ObjectId for Parent — might be a User ID
+  }
+  if (!parent) {
+    // Fallback: maybe `id` is a User ID, not a Parent document ID
+    parent = await Parent.findOne({ userId: id }).lean();
+  }
   if (!parent) throw { statusCode: 404, message: "Parent introuvable" };
 
+  // Use parent._id (not the input `id` which may be a userId)
+  const parentDocId = parent._id;
+
   // Fetch children links
-  const links = await ParentStudent.find({ parentId: id })
+  const links = await ParentStudent.find({ parentId: parentDocId })
     .populate("studentId", "firstName lastName matricule photo")
     .lean();
   
+  parent.id = parentDocId;
+  parent.childrenIds = links
+    .map(l => l.studentId?._id?.toString())
+    .filter(Boolean);
   parent.children = links.map(l => ({
     ...l.studentId,
+    id: l.studentId?._id?.toString(),
+    name: l.studentId ? `${l.studentId.firstName} ${l.studentId.lastName}` : "Inconnu",
     relation: l.relation,
     linkId: l._id
   }));

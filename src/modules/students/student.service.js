@@ -128,7 +128,7 @@ const getAllStudents = async (query = {}, options = {}) => {
 /* =====================================================
    GET STUDENT BY ID
  ===================================================== */
-const getStudentById = async (id) => {
+const getStudentById = async (id, options = {}) => {
   const student = await Student.findById(id)
     .populate("class", "name")
     .populate("school", "name")

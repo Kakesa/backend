@@ -288,8 +288,17 @@ const getMe = async (req, res) => {
       const Student = require('../students/student.model');
       linkedProfile = await Student.findOne({ userId: userObject._id });
     } else if (userObject.role === 'parent') {
-      const Parent = require('../parents/parent.model');
+      const { Parent } = require('../parents/parent.model');
       linkedProfile = await Parent.findOne({ userId: userObject._id });
+      // Fallback: find by email if userId was never linked
+      if (!linkedProfile && userObject.email) {
+        linkedProfile = await Parent.findOne({ email: userObject.email.toLowerCase().trim() });
+        // Link the userId for future lookups
+        if (linkedProfile) {
+          linkedProfile.userId = userObject._id;
+          await Parent.findByIdAndUpdate(linkedProfile._id, { userId: userObject._id });
+        }
+      }
     }
 
     res.status(200).json({
