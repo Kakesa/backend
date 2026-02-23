@@ -60,9 +60,22 @@ const deleteCourse = async (req, res, next) => {
   }
 };
 
+/* =====================================================
+   GET COURSES BY TEACHER
+===================================================== */
+const getTeacherCourses = async (req, res, next) => {
+  try {
+    const data = await courseService.getAllCourses({ teacherId: req.params.teacherId });
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAllCourses,
   getCourseById,
+  getTeacherCourses,
   createCourse,
   updateCourse,
   deleteCourse,
