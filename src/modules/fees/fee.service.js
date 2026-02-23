@@ -99,10 +99,10 @@ const sendReminder = async (studentFeeId, senderId) => {
   // 1. Notification interne (App)
   if (student.userId) {
     await createNotification({
-      recipient: student.userId._id,
+      userId: student.userId._id,
       title: "Rappel de paiement",
       message: `Rappel : Il reste un solde de ${balance} USD pour ${feeName}.`,
-      type: "FEE_REMINDER",
+      type: "info",
     });
 
     // Optionnel : Envoyer aussi un Message interne
