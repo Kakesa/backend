@@ -5,15 +5,16 @@ const User = require("../users/users.model");
    CREATE PARENT
 ===================================================== */
 const createParent = async (data, createdByAdmin = false) => {
-  // 🔐 Si créé par admin ou via inscription, créer un compte User
+  // 🔐 Créer ou trouver le compte User
   let userId = null;
   if (data.email) {
-    const existingUser = await User.findOne({ email: data.email.toLowerCase().trim() });
+    const normalizedEmail = data.email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: normalizedEmail });
     
     if (!existingUser) {
       const newUser = await User.create({
         name: `${data.firstName} ${data.lastName}`,
-        email: data.email.toLowerCase().trim(),
+        email: normalizedEmail,
         password: "123456", // Mot de passe par défaut
         role: "parent",
         school: data.schoolId,
@@ -29,9 +30,25 @@ const createParent = async (data, createdByAdmin = false) => {
         await existingUser.save();
       }
     }
+
+    // 🔍 Vérifier si un Parent document existe déjà avec cet email
+    const existingParent = await Parent.findOne({ email: normalizedEmail });
+    if (existingParent) {
+      // Lier le userId si pas encore fait
+      if (!existingParent.userId && userId) {
+        existingParent.userId = userId;
+        await existingParent.save();
+      }
+      return existingParent;
+    }
   }
 
   if (userId) {
+    // Vérifier aussi si un Parent document existe déjà avec ce userId
+    const existingParentByUserId = await Parent.findOne({ userId });
+    if (existingParentByUserId) {
+      return existingParentByUserId;
+    }
     data.userId = userId;
   }
 
@@ -50,6 +67,10 @@ const createParent = async (data, createdByAdmin = false) => {
    LINK CHILD TO PARENT
 ===================================================== */
 const linkChild = async (parentId, studentId, relation) => {
+  // Éviter les doublons
+  const existing = await ParentStudent.findOne({ parentId, studentId });
+  if (existing) return existing;
+
   const link = new ParentStudent({ parentId, studentId, relation });
   return await link.save();
 };
@@ -102,6 +123,17 @@ const getParentById = async (id) => {
   if (!parent) {
     // Fallback: maybe `id` is a User ID, not a Parent document ID
     parent = await Parent.findOne({ userId: id }).lean();
+  }
+  if (!parent) {
+    // Fallback by email: parent may have been created by admin without userId link
+    const user = await User.findById(id).lean();
+    if (user && user.email) {
+      parent = await Parent.findOne({ email: user.email.toLowerCase().trim() }).lean();
+      // Auto-link userId for future lookups
+      if (parent) {
+        await Parent.findByIdAndUpdate(parent._id, { userId: id });
+      }
+    }
   }
   if (!parent) throw { statusCode: 404, message: "Parent introuvable" };
 

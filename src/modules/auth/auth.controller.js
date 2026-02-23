@@ -284,9 +284,23 @@ const getMe = async (req, res) => {
     if (userObject.role === 'teacher') {
       const Teacher = require('../teachers/teacher.model');
       linkedProfile = await Teacher.findOne({ userId: userObject._id });
+      if (!linkedProfile && userObject.email) {
+        linkedProfile = await Teacher.findOne({ email: userObject.email.toLowerCase().trim() });
+        if (linkedProfile) {
+          linkedProfile.userId = userObject._id;
+          await Teacher.findByIdAndUpdate(linkedProfile._id, { userId: userObject._id });
+        }
+      }
     } else if (userObject.role === 'student') {
       const Student = require('../students/student.model');
       linkedProfile = await Student.findOne({ userId: userObject._id });
+      if (!linkedProfile && userObject.email) {
+        linkedProfile = await Student.findOne({ email: userObject.email.toLowerCase().trim() });
+        if (linkedProfile) {
+          linkedProfile.userId = userObject._id;
+          await Student.findByIdAndUpdate(linkedProfile._id, { userId: userObject._id });
+        }
+      }
     } else if (userObject.role === 'parent') {
       const { Parent } = require('../parents/parent.model');
       linkedProfile = await Parent.findOne({ userId: userObject._id });
@@ -297,6 +311,28 @@ const getMe = async (req, res) => {
         if (linkedProfile) {
           linkedProfile.userId = userObject._id;
           await Parent.findByIdAndUpdate(linkedProfile._id, { userId: userObject._id });
+        }
+      }
+      // Auto-create Parent document if none exists and user has a school
+      if (!linkedProfile && userObject.school) {
+        try {
+          const [firstName = "", ...rest] = (userObject.name || "").split(" ");
+          const lastName = rest.join(" ") || firstName;
+          const year = new Date().getFullYear();
+          const count = await Parent.countDocuments({ schoolId: userObject.school });
+          linkedProfile = await Parent.create({
+            firstName,
+            lastName,
+            email: (userObject.email || "").toLowerCase().trim(),
+            phone: userObject.phone || "",
+            schoolId: userObject.school,
+            userId: userObject._id,
+            matricule: `PAR-${year}-${String(count + 1).padStart(3, '0')}`,
+            status: "active",
+          });
+        } catch (err) {
+          console.error("Error auto-creating parent profile:", err.message);
+          // Don't fail the whole request if profile creation fails
         }
       }
     }
