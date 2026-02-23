@@ -2,7 +2,7 @@ const roomService = require("./room.service");
 
 const getAllRooms = async (req, res, next) => {
   try {
-    const data = await roomService.getAllRooms(req.query);
+    const data = await roomService.getAllRooms({ ...req.query, schoolId: req.schoolId });
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -20,7 +20,7 @@ const getRoomById = async (req, res, next) => {
 
 const createRoom = async (req, res, next) => {
   try {
-    const data = await roomService.createRoom(req.body);
+    const data = await roomService.createRoom({ ...req.body, schoolId: req.schoolId });
     res.status(201).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -29,7 +29,7 @@ const createRoom = async (req, res, next) => {
 
 const updateRoom = async (req, res, next) => {
   try {
-    const data = await roomService.updateRoom(req.params.id, req.body);
+    const data = await roomService.updateRoom(req.params.id, { ...req.body, schoolId: req.schoolId });
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
