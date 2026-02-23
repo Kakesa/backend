@@ -68,6 +68,17 @@ const deleteGrade = async (req, res, next) => {
   }
 };
 
+const getStudentAverage = async (req, res, next) => {
+  try {
+    const { studentId } = req.params;
+    const { trimester, academicYear } = req.query;
+    const data = await gradeService.getStudentAverage(studentId, trimester, academicYear);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getGrades,
   getGradesByStudent,
@@ -76,4 +87,5 @@ module.exports = {
   bulkCreateGrades,
   updateGrade,
   deleteGrade,
+  getStudentAverage,
 };

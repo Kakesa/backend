@@ -35,11 +35,12 @@ const markAllAsRead = async (userId) => {
   return await Notification.updateMany({ userId }, { isRead: true });
 };
 
-/* =====================================================
-   DELETE NOTIFICATION
-===================================================== */
 const deleteNotification = async (id) => {
   return await Notification.deleteOne({ _id: id });
+};
+
+const deleteAllNotifications = async (userId) => {
+  return await Notification.deleteMany({ userId });
 };
 
 /* =====================================================
@@ -68,5 +69,6 @@ module.exports = {
   markAsRead,
   markAllAsRead,
   deleteNotification,
+  deleteAllNotifications,
   notifyNewUserJoined,
 };

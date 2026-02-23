@@ -12,6 +12,7 @@ router.post("/", notificationController.createNotification);
 router.post("/user-joined", notificationController.notifyNewUserJoined);
 router.put("/:id/read", notificationController.markAsRead);
 router.put("/read-all/:userId", notificationController.markAllAsRead);
+router.delete("/user/:userId/clear", notificationController.deleteAllNotifications);
 router.delete("/:id", notificationController.deleteNotification);
 
 module.exports = router;

@@ -80,9 +80,40 @@ const deleteGrade = async (id) => {
   return true;
 };
 
+/* =====================================================
+   GET STUDENT AVERAGE
+===================================================== */
+const getStudentAverage = async (studentId, trimester, academicYear) => {
+  const filter = { studentId };
+  if (trimester) filter.trimester = Number(trimester);
+  if (academicYear) filter.academicYear = academicYear;
+
+  const grades = await Grade.find(filter).populate("subjectId", "coefficient");
+  
+  if (grades.length === 0) return { moyenne: 0, totalCoef: 0 };
+
+  let weightedSum = 0;
+  let totalCoef = 0;
+
+  grades.forEach(g => {
+    if (g.moyenne !== null && g.subjectId) {
+      const coef = g.subjectId.coefficient || 1;
+      weightedSum += g.moyenne * coef;
+      totalCoef += coef;
+    }
+  });
+
+  return {
+    moyenne: totalCoef > 0 ? weightedSum / totalCoef : 0,
+    totalCoef,
+    count: grades.length
+  };
+};
+
 module.exports = {
   updateOrCreateGrade,
   bulkCreateGrades,
   getGrades,
   deleteGrade,
+  getStudentAverage,
 };
