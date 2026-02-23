@@ -36,4 +36,7 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
+// Index TTL : Suppression automatique après 30 jours (30 * 24 * 60 * 60 secondes)
+messageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
+
 module.exports = mongoose.model("Message", messageSchema);

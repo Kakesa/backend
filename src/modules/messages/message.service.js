@@ -93,12 +93,44 @@ const getContacts = async (currentUserId, schoolId) => {
     .sort({ role: 1, name: 1 })
     .lean();
 
+  // Get unread counts for each contact
+  const unreadCounts = await Message.aggregate([
+    { $match: { recipientId: currentUserId, isRead: false } },
+    { $group: { _id: "$senderId", count: { $sum: 1 } } }
+  ]);
+
+  const countMap = unreadCounts.reduce((acc, curr) => {
+    acc[curr._id.toString()] = curr.count;
+    return acc;
+  }, {});
+
   return users.map((u) => ({
     id: u._id.toString(),
     name: u.name,
     email: u.email,
     role: u.role,
+    unreadCount: countMap[u._id.toString()] || 0,
   }));
+};
+
+const getConversationHistory = async (userId, otherId) => {
+  return await Message.find({
+    $or: [
+      { senderId: userId, recipientId: otherId },
+      { senderId: otherId, recipientId: userId }
+    ]
+  })
+    .populate("senderId", "name email role")
+    .populate("recipientId", "name email role")
+    .sort({ createdAt: 1 }) // Chronological order for chat
+    .lean();
+};
+
+const markConversationAsRead = async (userId, otherId) => {
+  return await Message.updateMany(
+    { senderId: otherId, recipientId: userId, isRead: false },
+    { isRead: true }
+  );
 };
 
 module.exports = {
@@ -112,4 +144,6 @@ module.exports = {
   archiveMessage,
   deleteMessage,
   getContacts,
+  getConversationHistory,
+  markConversationAsRead,
 };

@@ -14,6 +14,8 @@ router.post("/", messageController.sendMessage);
 router.put("/:id/read", messageController.markAsRead);
 router.put("/read-all/:userId", messageController.markAllAsRead);
 router.put("/:id/archive", messageController.archiveMessage);
+router.get("/conversation/:otherId", messageController.getConversationHistory);
+router.put("/conversation/:otherId/read", messageController.markConversationAsRead);
 router.get("/contacts", messageController.getContacts);
 router.delete("/:id", messageController.deleteMessage);
 

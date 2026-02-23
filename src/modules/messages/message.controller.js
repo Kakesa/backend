@@ -90,6 +90,24 @@ const getContacts = async (req, res, next) => {
   }
 };
 
+const getConversationHistory = async (req, res, next) => {
+  try {
+    const data = await messageService.getConversationHistory(req.user._id, req.params.otherId);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const markConversationAsRead = async (req, res, next) => {
+  try {
+    await messageService.markConversationAsRead(req.user._id, req.params.otherId);
+    res.status(200).json({ success: true, message: "Conversation marquée comme lue" });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMessagesByUser,
   getInbox,
@@ -101,4 +119,6 @@ module.exports = {
   archiveMessage,
   deleteMessage,
   getContacts,
+  getConversationHistory,
+  markConversationAsRead,
 };
