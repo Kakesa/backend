@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema(
 
    role: {
       type: String,
-      enum: ['superadmin', 'admin', 'teacher', 'student', 'parent'],
+      enum: ['superadmin', 'admin', 'teacher', 'student', 'parent', 'accountant'],
       index: true, // toujours utile si tu fais des recherches par rôle
       required: true, // assure que le rôle doit être fourni à la création
     },
