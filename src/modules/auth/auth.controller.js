@@ -283,23 +283,33 @@ const getMe = async (req, res) => {
 
     if (userObject.role === 'teacher') {
       const Teacher = require('../teachers/teacher.model');
-      linkedProfile = await Teacher.findOne({ userId: userObject._id });
+      linkedProfile = await Teacher.findOne({ userId: userObject._id }).populate('subjects classes');
       if (!linkedProfile && userObject.email) {
-        linkedProfile = await Teacher.findOne({ email: userObject.email.toLowerCase().trim() });
+        linkedProfile = await Teacher.findOne({ email: userObject.email.toLowerCase().trim() }).populate('subjects classes');
         if (linkedProfile) {
           linkedProfile.userId = userObject._id;
           await Teacher.findByIdAndUpdate(linkedProfile._id, { userId: userObject._id });
         }
       }
+      // Sync school back to user if missing
+      if (linkedProfile && linkedProfile.schoolId && !userObject.school) {
+        await User.findByIdAndUpdate(userObject._id, { school: linkedProfile.schoolId });
+        userObject.school = linkedProfile.schoolId;
+      }
     } else if (userObject.role === 'student') {
       const Student = require('../students/student.model');
-      linkedProfile = await Student.findOne({ userId: userObject._id });
+      linkedProfile = await Student.findOne({ userId: userObject._id }).populate('class');
       if (!linkedProfile && userObject.email) {
-        linkedProfile = await Student.findOne({ email: userObject.email.toLowerCase().trim() });
+        linkedProfile = await Student.findOne({ email: userObject.email.toLowerCase().trim() }).populate('class');
         if (linkedProfile) {
           linkedProfile.userId = userObject._id;
           await Student.findByIdAndUpdate(linkedProfile._id, { userId: userObject._id });
         }
+      }
+      // Sync school back to user if missing
+      if (linkedProfile && linkedProfile.school && !userObject.school) {
+        await User.findByIdAndUpdate(userObject._id, { school: linkedProfile.school });
+        userObject.school = linkedProfile.school;
       }
     } else if (userObject.role === 'parent') {
       const { Parent } = require('../parents/parent.model');
@@ -312,6 +322,11 @@ const getMe = async (req, res) => {
           linkedProfile.userId = userObject._id;
           await Parent.findByIdAndUpdate(linkedProfile._id, { userId: userObject._id });
         }
+      }
+      // Sync school back to user if missing
+      if (linkedProfile && linkedProfile.schoolId && !userObject.school) {
+        await User.findByIdAndUpdate(userObject._id, { school: linkedProfile.schoolId });
+        userObject.school = linkedProfile.schoolId;
       }
       // Auto-create Parent document if none exists and user has a school
       if (!linkedProfile && userObject.school) {

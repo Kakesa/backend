@@ -1,5 +1,9 @@
 const redis = require('../config/redis');
 const School = require('../modules/schools/school.model');
+const User = require('../modules/users/users.model');
+const Student = require('../modules/students/student.model');
+const Teacher = require('../modules/teachers/teacher.model');
+const { Parent } = require('../modules/parents/parent.model');
 
 module.exports = async (req, res, next) => {
   try {
@@ -8,7 +12,31 @@ module.exports = async (req, res, next) => {
       return next();
     }
 
-    const schoolId = req.user?.school?._id || req.user?.school;
+    let schoolId = req.user?.school?._id || req.user?.school;
+
+    // 🔥 SYNC RESCUE: Si le schoolId est manquant dans l'objet User, on tente de le récupérer depuis le profil lié
+    if (!schoolId && req.user) {
+      let foundSchoolId = null;
+      const userId = req.user._id;
+
+      if (req.user.role === 'student') {
+        const student = await Student.findOne({ userId });
+        if (student) foundSchoolId = student.school;
+      } else if (req.user.role === 'teacher') {
+        const teacher = await Teacher.findOne({ userId });
+        if (teacher) foundSchoolId = teacher.schoolId;
+      } else if (req.user.role === 'parent') {
+        const parent = await Parent.findOne({ userId });
+        if (parent) foundSchoolId = parent.schoolId;
+      }
+
+      if (foundSchoolId) {
+        await User.findByIdAndUpdate(userId, { school: foundSchoolId });
+        req.user.school = foundSchoolId;
+        schoolId = foundSchoolId;
+      }
+    }
+
     if (!schoolId) {
       return res.status(403).json({ message: 'Aucune école associée' });
     }

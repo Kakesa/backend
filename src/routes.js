@@ -24,6 +24,7 @@ const roleRoutes = require('./modules/roles/role.routes');
 const userRoutes = require('./modules/users/user.routes');
 const invitationRoutes = require('./modules/invitations/invitation.routes');
 const feeRoutes = require('./modules/fees/fee.routes');
+const { protect } = require('./middlewares/auth.middleware');
 const checkSubscription = require('./middlewares/checkSubscription.middleware');
 
 module.exports = (app) => {
@@ -33,26 +34,26 @@ module.exports = (app) => {
   app.use('/api/superadmin', superAdminRoutes);
   app.use('/api/subscriptions', subscriptionRoutes);
 
-  // 🔒 School Activity Routes (Require active subscription/status)
-  app.use('/api/students', checkSubscription, studentRoutes);
-  app.use('/api/classes', checkSubscription, classRoutes);
-  app.use('/api/subjects', checkSubscription, subjectRoutes);
-  app.use('/api/teachers', checkSubscription, teacherRoutes);
-  app.use('/api/parents', checkSubscription, parentRoutes);
-  app.use('/api/courses', checkSubscription, courseRoutes);
-  app.use('/api/schedule', checkSubscription, scheduleRoutes);
-  app.use('/api/rooms', checkSubscription, roomRoutes);
-  app.use('/api/grades', checkSubscription, gradeRoutes);
-  app.use('/api/attendance', checkSubscription, attendanceRoutes);
-  app.use('/api/messages', checkSubscription, messageRoutes);
-  app.use('/api/notifications', checkSubscription, notificationRoutes);
-  app.use('/api/absences', checkSubscription, absenceRoutes);
-  app.use('/api/assignments', checkSubscription, assignmentRoutes);
-  app.use('/api/evaluations', checkSubscription, evaluationRoutes);
-  app.use('/api/competences', checkSubscription, competenceRoutes);
-  app.use('/api/calendar', checkSubscription, calendarRoutes);
-  app.use('/api/roles', checkSubscription, roleRoutes);
-  app.use('/api/users', checkSubscription, userRoutes);
-  app.use('/api/invitations', checkSubscription, invitationRoutes);
-  app.use('/api/fees', checkSubscription, feeRoutes);
+  // 🔒 School Activity Routes (Require authentication AND active subscription/status)
+  app.use('/api/students', protect, checkSubscription, studentRoutes);
+  app.use('/api/classes', protect, checkSubscription, classRoutes);
+  app.use('/api/subjects', protect, checkSubscription, subjectRoutes);
+  app.use('/api/teachers', protect, checkSubscription, teacherRoutes);
+  app.use('/api/parents', protect, checkSubscription, parentRoutes);
+  app.use('/api/courses', protect, checkSubscription, courseRoutes);
+  app.use('/api/schedule', protect, checkSubscription, scheduleRoutes);
+  app.use('/api/rooms', protect, checkSubscription, roomRoutes);
+  app.use('/api/grades', protect, checkSubscription, gradeRoutes);
+  app.use('/api/attendance', protect, checkSubscription, attendanceRoutes);
+  app.use('/api/messages', protect, checkSubscription, messageRoutes);
+  app.use('/api/notifications', protect, checkSubscription, notificationRoutes);
+  app.use('/api/absences', protect, checkSubscription, absenceRoutes);
+  app.use('/api/assignments', protect, checkSubscription, assignmentRoutes);
+  app.use('/api/evaluations', protect, checkSubscription, evaluationRoutes);
+  app.use('/api/competences', protect, checkSubscription, competenceRoutes);
+  app.use('/api/calendar', protect, checkSubscription, calendarRoutes);
+  app.use('/api/roles', protect, checkSubscription, roleRoutes);
+  app.use('/api/users', protect, checkSubscription, userRoutes);
+  app.use('/api/invitations', protect, checkSubscription, invitationRoutes);
+  app.use('/api/fees', protect, checkSubscription, feeRoutes);
 };
