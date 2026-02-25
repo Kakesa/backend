@@ -93,6 +93,24 @@ const getSchoolById = async (id, user) => {
 };
 
 /* =====================================================
+   REGENERATE SCHOOL CODE
+===================================================== */
+const regenerateSchoolCode = async (schoolId, user) => {
+  const school = await School.findById(schoolId);
+  if (!school) throw new Error('École introuvable');
+
+  if (user.role !== 'superadmin' && String(school._id) !== String(user.school)) {
+    throw new Error('Accès non autorisé');
+  }
+
+  const newCode = await generateSchoolCode();
+  school.code = newCode;
+  await school.save();
+
+  return newCode;
+};
+
+/* =====================================================
    UPDATE SCHOOL
 ===================================================== */
 const updateSchool = async (id, data, file, user) => {
@@ -139,4 +157,5 @@ module.exports = {
   getSchoolById,
   updateSchool,
   deleteSchool,
+  regenerateSchoolCode,
 };

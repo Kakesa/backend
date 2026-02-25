@@ -98,10 +98,58 @@ const deleteSchool = async (req, res, next) => {
   }
 };
 
+/* =====================================================
+   GET CURRENT SCHOOL
+===================================================== */
+const getCurrentSchool = async (req, res, next) => {
+  try {
+    if (!req.user.school) {
+      return res.status(404).json({ success: false, message: "Aucune école rattachée à cet utilisateur" });
+    }
+    const school = await schoolService.getSchoolById(req.user.school, req.user);
+    res.status(200).json({ success: true, data: school });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   GET SCHOOL CODE
+===================================================== */
+const getSchoolCode = async (req, res, next) => {
+  try {
+    if (!req.user.school) {
+      return res.status(404).json({ success: false, message: "Aucune école rattachée" });
+    }
+    const school = await School.findById(req.user.school).select('code');
+    res.status(200).json({ success: true, data: { code: school.code } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   REGENERATE SCHOOL CODE
+===================================================== */
+const regenerateSchoolCode = async (req, res, next) => {
+  try {
+    if (!req.user.school) {
+      return res.status(404).json({ success: false, message: "Aucune école rattachée" });
+    }
+    const code = await schoolService.regenerateSchoolCode(req.user.school, req.user);
+    res.status(200).json({ success: true, data: { code } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createSchool,
   getAllSchools,
   getSchoolById,
   updateSchool,
   deleteSchool,
+  getCurrentSchool,
+  getSchoolCode,
+  regenerateSchoolCode,
 };

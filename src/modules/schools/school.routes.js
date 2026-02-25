@@ -57,6 +57,26 @@ router.post(
 ===================================================== */
 router.use(checkSubscription);
 
+// GET /api/schools/current
+router.get(
+  '/current',
+  schoolController.getCurrentSchool
+);
+
+// GET /api/schools/current/code
+router.get(
+  '/current/code',
+  restrictTo('superadmin', 'admin'),
+  schoolController.getSchoolCode
+);
+
+// POST /api/schools/current/regenerate-code
+router.post(
+  '/current/regenerate-code',
+  restrictTo('superadmin', 'admin'),
+  schoolController.regenerateSchoolCode
+);
+
 // GET /api/schools
 router.get(
   '/',
