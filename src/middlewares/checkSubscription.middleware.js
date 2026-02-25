@@ -3,7 +3,12 @@ const School = require('../modules/schools/school.model');
 
 module.exports = async (req, res, next) => {
   try {
-    const schoolId = req.user?.school?._id;
+    // 0️⃣ Superadmin bypass
+    if (req.user?.role === 'superadmin') {
+      return next();
+    }
+
+    const schoolId = req.user?.school?._id || req.user?.school;
     if (!schoolId) {
       return res.status(403).json({ message: 'Aucune école associée' });
     }
