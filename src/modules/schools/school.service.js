@@ -4,6 +4,7 @@ const AuditLog = require('../audit/audit.model');
 const { generateSchoolCode } = require('./school.utils');
 const path = require('path');
 const fs = require('fs');
+const subscriptionService = require('../subscriptions/subscription.service');
 
 /* =====================================================
    CREATE SCHOOL
@@ -32,6 +33,9 @@ const createSchool = async (data, file) => {
     users: [adminId],
     createdBy: adminId,
   });
+
+  // Initialize 30-day trial
+  await subscriptionService.createTrialSubscription(school._id);
 
   admin.school = school._id;
   admin.needsSchoolSetup = false;

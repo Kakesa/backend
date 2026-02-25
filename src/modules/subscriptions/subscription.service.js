@@ -27,6 +27,40 @@ const upsertSubscription = async ({ schoolId, plan, durationMonths }) => {
 };
 
 /* ===========================
+   CREATE TRIAL (30 DAYS)
+=========================== */
+const createTrialSubscription = async (schoolId) => {
+  const startDate = new Date();
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + 30); // 30 days trial
+
+  const subscription = await Subscription.findOneAndUpdate(
+    { school: schoolId },
+    { 
+      status: 'trial', 
+      plan: 'free', 
+      startDate, 
+      endDate,
+      price: 0
+    },
+    { new: true, upsert: true }
+  );
+
+  // 🔁 Sync direct dans School.subscription
+  await School.findByIdAndUpdate(schoolId, { 
+    'subscription.status': 'trial',
+    'subscription.plan': 'basic', // or 'free' based on school model enum
+    'subscription.startDate': startDate,
+    'subscription.endDate': endDate
+  });
+
+  // 🔥 Update cache Redis
+  await redis.set(`school:${schoolId}:subscription`, JSON.stringify(subscription), 'EX', 3600);
+
+  return subscription;
+};
+
+/* ===========================
    GET BY SCHOOL
 =========================== */
 const getSubscriptionBySchool = async (schoolId) => {
@@ -66,6 +100,7 @@ const getGlobalSubscriptionStats = async () => {
 
 module.exports = {
   upsertSubscription,
+  createTrialSubscription,
   getSubscriptionBySchool,
   getGlobalSubscriptionStats,
 };

@@ -68,10 +68,49 @@ const getAllFeeStatuses = async (req, res, next) => {
   }
 };
 
+/* =====================================================
+   GET MY FEES (STUDENT SELF)
+===================================================== */
+const getMyFees = async (req, res, next) => {
+  try {
+    const data = await feeService.getMyFees(req.user._id);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   GET MY CHILDREN FEES (PARENT)
+===================================================== */
+const getMyChildrenFees = async (req, res, next) => {
+  try {
+    const data = await feeService.getMyChildrenFees(req.user._id);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   GET CLASS FEE STATUS (TEACHER)
+===================================================== */
+const getClassFeeStatus = async (req, res, next) => {
+  try {
+    const data = await feeService.getClassFeeStatus(req.user._id, req.query.classId);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createFeeDefinition,
   getStudentFees,
   recordPayment,
   sendReminder,
   getAllFeeStatuses,
+  getMyFees,
+  getMyChildrenFees,
+  getClassFeeStatus,
 };

@@ -1,6 +1,8 @@
 const { FeeDefinition, StudentFee, Payment } = require("./fee.model");
 const Student = require("../students/student.model");
 const { createNotification } = require("../notifications/notification.service");
+const Parent = require("../parents/parent.model");
+const Teacher = require("../teachers/teacher.model");
 
 /* =====================================================
    CREATE FEE DEFINITION
@@ -181,6 +183,86 @@ const checkStudentPaymentStatus = async (studentId) => {
   };
 };
 
+/* =====================================================
+   GET MY FEES (FOR LOGGED-IN STUDENT)
+===================================================== */
+const getMyFees = async (userId) => {
+  const student = await Student.findOne({ userId });
+  if (!student) throw new Error("Profil étudiant introuvable");
+  return getStudentFees(student._id);
+};
+
+/* =====================================================
+   GET MY CHILDREN FEES (FOR LOGGED-IN PARENT)
+===================================================== */
+const getMyChildrenFees = async (userId) => {
+  const parent = await Parent.findOne({ userId }).populate("children");
+  if (!parent) throw new Error("Profil parent introuvable");
+
+  const children = parent.children || [];
+  const results = [];
+
+  for (const child of children) {
+    const fees = await StudentFee.find({ studentId: child._id })
+      .populate("feeDefinitionId")
+      .lean();
+    results.push({
+      student: {
+        id: child._id,
+        firstName: child.firstName,
+        lastName: child.lastName,
+        matricule: child.matricule,
+        class: child.class,
+      },
+      fees: fees.map(f => ({ ...f, id: f._id })),
+    });
+  }
+
+  return results;
+};
+
+/* =====================================================
+   GET CLASS FEE STATUS (FOR TEACHERS)
+===================================================== */
+const getClassFeeStatus = async (userId, classId) => {
+  let studentFilter = {};
+
+  if (classId) {
+    studentFilter.class = classId;
+  } else {
+    // Find teacher's classes
+    const teacher = await Teacher.findOne({ userId }).populate("classes");
+    if (teacher && teacher.classes && teacher.classes.length > 0) {
+      studentFilter.class = { $in: teacher.classes.map(c => c._id || c) };
+    }
+  }
+
+  const students = await Student.find(studentFilter)
+    .populate("class", "name")
+    .lean();
+
+  const results = [];
+  for (const student of students) {
+    const fees = await StudentFee.find({ studentId: student._id }).lean();
+    const totalBalance = fees.reduce((acc, f) => acc + f.balance, 0);
+    const allPaid = fees.length > 0 && fees.every(f => f.status === "PAID");
+    const anyUnpaid = fees.some(f => f.status === "UNPAID" || f.status === "PARTIAL");
+
+    results.push({
+      studentId: student._id,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      matricule: student.matricule,
+      class: student.class,
+      feeStatus: fees.length === 0 ? "NO_FEES" : allPaid ? "PAID" : anyUnpaid ? "UNPAID" : "PARTIAL",
+      totalBalance,
+      feeCount: fees.length,
+    });
+  }
+
+  return results;
+};
+
 module.exports = {
   createFeeDefinition,
   getStudentFees,
@@ -188,4 +270,7 @@ module.exports = {
   sendReminder,
   getAllFeeStatuses,
   checkStudentPaymentStatus,
+  getMyFees,
+  getMyChildrenFees,
+  getClassFeeStatus,
 };

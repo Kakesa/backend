@@ -17,22 +17,39 @@ module.exports = async (req, res, next) => {
       subscription = JSON.parse(subscription);
     } else {
       // 2️⃣ Sinon récupérer depuis MongoDB
-      const school = await School.findById(schoolId).populate('subscription').lean();
+      const school = await School.findById(schoolId).lean();
+      if (!school) {
+        return res.status(404).json({ message: 'École introuvable' });
+      }
+
+      // Check school status first (Superadmin deactivation)
+      if (school.status !== 'active') {
+        return res.status(403).json({
+          message: 'Cette école a été désactivée par le super-administrateur',
+          reason: 'SCHOOL_DEACTIVATED'
+        });
+      }
+
       subscription = school.subscription;
       // 3️⃣ Stocker dans Redis 1h
       await redis.set(redisKey, JSON.stringify(subscription), 'EX', 3600);
     }
 
-    // ❌ Vérification statut
-    // On autorise 'active', 'trial' et 'free'. Un abonnement 'free' n'a pas forcément de date de fin.
+    // ❌ Vérification statut de l'abonnement
     const allowedStatuses = ['active', 'trial', 'free'];
     if (!subscription || !allowedStatuses.includes(subscription.status)) {
-      return res.status(403).json({ message: 'Abonnement expiré ou inactif' });
+      return res.status(403).json({
+        message: 'Abonnement expiré ou inactif. Veuillez contacter le support.',
+        reason: 'SUBSCRIPTION_INACTIVE'
+      });
     }
 
-    // Vérifier la date de fin seulement si elle existe (les plans 'free' peuvent ne pas en avoir)
+    // Vérifier la date de fin (Enforcement des 30 jours pour le trial)
     if (subscription.endDate && new Date(subscription.endDate) < new Date()) {
-      return res.status(403).json({ message: 'Abonnement expiré' });
+      return res.status(403).json({
+        message: 'Votre période d\'essai ou abonnement a expiré.',
+        reason: 'SUBSCRIPTION_EXPIRED'
+      });
     }
 
     // 🟢 Tout est bon
