@@ -71,6 +71,14 @@ const reviewJustification = async (id, data) => {
   return justification;
 };
 
+const updateJustificationFile = async (id, data) => {
+  return await Justification.findByIdAndUpdate(
+    id,
+    { documentUrl: data.documentUrl, fileName: data.fileName },
+    { new: true }
+  );
+};
+
 module.exports = {
   createAbsence,
   getAbsences,
@@ -78,4 +86,5 @@ module.exports = {
   createJustification,
   getJustifications,
   reviewJustification,
+  updateJustificationFile,
 };

@@ -7,9 +7,9 @@ const justificationSchema = new mongoose.Schema(
       ref: "Student",
       required: true,
     },
-    type: {
+    documentType: {
       type: String,
-      enum: ["medical", "family", "personal", "other"],
+      enum: ["medical", "family", "administrative", "other"],
       required: true,
     },
     reason: {
@@ -17,6 +17,10 @@ const justificationSchema = new mongoose.Schema(
       required: true,
     },
     documentUrl: {
+      type: String,
+      default: "",
+    },
+    fileName: {
       type: String,
       default: "",
     },

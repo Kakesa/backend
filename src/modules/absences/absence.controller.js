@@ -87,6 +87,24 @@ const reviewJustification = async (req, res, next) => {
   }
 };
 
+const uploadJustificationFile = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "Aucun fichier n'a été fourni" });
+    }
+
+    const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    const data = await absenceService.updateJustificationFile(req.params.id, {
+      documentUrl: fileUrl,
+      fileName: req.file.originalname,
+    });
+
+    res.status(200).json({ success: true, data: { url: fileUrl } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAbsences,
   getAbsenceByStudent,
@@ -97,4 +115,5 @@ module.exports = {
   getPendingJustifications,
   createJustification,
   reviewJustification,
+  uploadJustificationFile,
 };

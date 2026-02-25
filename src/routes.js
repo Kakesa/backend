@@ -44,7 +44,6 @@ module.exports = (app) => {
   app.use('/api/messages', messageRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/absences', absenceRoutes);
-  app.use('/api/justifications', absenceRoutes);
   app.use('/api/assignments', assignmentRoutes);
   app.use('/api/evaluations', evaluationRoutes);
   app.use('/api/competences', competenceRoutes);
