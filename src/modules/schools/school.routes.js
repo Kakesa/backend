@@ -62,6 +62,13 @@ router.get(
   '/current',
   schoolController.getCurrentSchool
 );
+ 
+// GET /api/schools/current/joined-users
+router.get(
+  '/current/joined-users',
+  restrictTo('superadmin', 'admin'),
+  schoolController.getJoinedUsers
+);
 
 // GET /api/schools/current/code
 router.get(
@@ -82,6 +89,12 @@ router.get(
   '/',
   restrictTo('superadmin', 'admin'),
   schoolController.getAllSchools
+);
+
+// GET /api/schools/subscription
+router.get(
+  '/subscription',
+  schoolController.getSchoolSubscription
 );
 
 // GET /api/schools/:id

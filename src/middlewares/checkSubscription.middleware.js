@@ -24,11 +24,14 @@ module.exports = async (req, res, next) => {
     }
 
     // ❌ Vérification statut
-    if (!subscription || subscription.status !== 'active') {
+    // On autorise 'active', 'trial' et 'free'. Un abonnement 'free' n'a pas forcément de date de fin.
+    const allowedStatuses = ['active', 'trial', 'free'];
+    if (!subscription || !allowedStatuses.includes(subscription.status)) {
       return res.status(403).json({ message: 'Abonnement expiré ou inactif' });
     }
 
-    if (new Date(subscription.endDate) < new Date()) {
+    // Vérifier la date de fin seulement si elle existe (les plans 'free' peuvent ne pas en avoir)
+    if (subscription.endDate && new Date(subscription.endDate) < new Date()) {
       return res.status(403).json({ message: 'Abonnement expiré' });
     }
 

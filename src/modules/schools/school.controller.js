@@ -143,6 +143,41 @@ const regenerateSchoolCode = async (req, res, next) => {
   }
 };
 
+/* =====================================================
+   GET JOINED USERS
+===================================================== */
+const getJoinedUsers = async (req, res, next) => {
+  try {
+    if (!req.user.school) {
+      return res.status(404).json({ success: false, message: "Aucune école rattachée" });
+    }
+    const history = await schoolService.getJoinedUsersHistory(req.user.school);
+    res.status(200).json({ success: true, data: history });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   GET SCHOOL SUBSCRIPTION
+===================================================== */
+const getSchoolSubscription = async (req, res, next) => {
+  try {
+    if (!req.user.school) {
+      return res.status(404).json({ success: false, message: "Aucune école rattachée" });
+    }
+    
+    const school = await School.findById(req.user.school).select('subscription');
+    if (!school) {
+      return res.status(404).json({ success: false, message: "École introuvable" });
+    }
+
+    res.status(200).json({ success: true, data: school.subscription });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createSchool,
   getAllSchools,
@@ -152,4 +187,6 @@ module.exports = {
   getCurrentSchool,
   getSchoolCode,
   regenerateSchoolCode,
+  getJoinedUsers,
+  getSchoolSubscription,
 };

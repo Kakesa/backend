@@ -38,13 +38,19 @@ const checkSubscriptionActive = async (req, res, next) => {
 
   const subscription = await Subscription.findOne({
     school: req.user.school,
-    status: 'active',
-    endDate: { $gte: new Date() },
+    status: { $in: ['active', 'trial', 'free'] },
   });
 
   if (!subscription) {
     return res.status(403).json({
       message: "Abonnement expiré ou inactif",
+    });
+  }
+
+  // Vérifier la date de fin si elle existe
+  if (subscription.endDate && new Date(subscription.endDate) < new Date()) {
+    return res.status(403).json({
+      message: "Abonnement expiré",
     });
   }
 

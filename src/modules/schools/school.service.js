@@ -1,5 +1,6 @@
 const School = require('./school.model');
 const User = require('../users/users.model');
+const AuditLog = require('../audit/audit.model');
 const { generateSchoolCode } = require('./school.utils');
 const path = require('path');
 const fs = require('fs');
@@ -151,6 +152,27 @@ const deleteSchool = async (id, user) => {
   await school.deleteOne();
 };
 
+/* =====================================================
+   GET JOINED USERS HISTORY
+   Fetches users who joined via school code from AuditLog
+===================================================== */
+const getJoinedUsersHistory = async (schoolId) => {
+  const logs = await AuditLog.find({
+    action: 'JOIN_SCHOOL',
+    'target.id': schoolId
+  })
+  .sort({ createdAt: -1 })
+  .populate('actor.id', 'name email role');
+
+  return logs.map(log => ({
+    id: log.actor.id?._id || log.actor.id,
+    name: log.actor.id?.name || log.actor.name,
+    email: log.actor.id?.email || 'N/A',
+    role: log.actor.id?.role || log.actor.role,
+    joinedAt: log.createdAt
+  }));
+};
+
 module.exports = {
   createSchool,
   getAllSchools,
@@ -158,4 +180,5 @@ module.exports = {
   updateSchool,
   deleteSchool,
   regenerateSchoolCode,
+  getJoinedUsersHistory,
 };
