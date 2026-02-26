@@ -14,6 +14,7 @@ const {
   getMe,
   registerStudent,
   changePassword,
+  getStudentEmail,
 } = require('./auth.controller');
 
 const { registerValidation, loginValidation } = require('./auth.validation');
@@ -31,6 +32,7 @@ router.post('/login', loginValidation, validate, login);
 router.post('/activate-otp', activateAccountWithOTP);
 router.post('/resend-otp', resendOTP);
 router.post('/change-password', protect, changePassword);
+router.post('/get-student-email', getStudentEmail); // Public endpoint pour récupérer l'email d'un élève
 router.get('/me', protect, getMe);
 
 // -------------------------

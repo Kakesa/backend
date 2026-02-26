@@ -413,6 +413,32 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+/* =====================================================
+   GET STUDENT EMAIL (Récupérer email généré)
+===================================================== */
+const getStudentEmail = async (req, res, next) => {
+  try {
+    const { firstName, lastName, matricule } = req.body;
+    
+    if (!firstName || !lastName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Prénom et nom requis',
+      });
+    }
+
+    const result = await authService.getStudentEmail(firstName, lastName, matricule);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   register,
   activateAccountWithOTP,
@@ -426,4 +452,5 @@ module.exports = {
   getMe,
   registerStudent,
   changePassword,
+  getStudentEmail,
 };

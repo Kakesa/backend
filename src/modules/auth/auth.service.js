@@ -116,11 +116,17 @@ const resendOTP = async (email) => {
 const login = async ({ email, password }) => {
   const user = await User.findOne({ email }).select('+password');
 
-  if (!user) throw new Error('Utilisateur non trouvé (Email inconnu)');
+  if (!user) {
+    // 🔍 Vérifier si c'est un élève qui essaie avec un email mal formaté
+    const helpMessage = `Utilisateur non trouvé. 
+Si vous êtes un élève, vérifiez que vous utilisez l'email fourni lors de votre inscription. 
+Votre email peut avoir été générée automatiquement au format: prenom.nom@student.local`;
+    throw new Error(helpMessage);
+  }
 
   // 🔥 SUPER ADMIN BYPASS OTP
   if (user.role !== 'superadmin' && !user.isActive) {
-    throw new Error('Compte non activé');
+    throw new Error('Compte non activé. Veuillez vérifier votre email pour le code d\'activation OTP.');
   }
 
   const match = await bcrypt.compare(password, user.password);
@@ -268,6 +274,39 @@ const changePassword = async (userId, { oldPassword, newPassword }) => {
   return { message: 'Mot de passe changé avec succès' };
 };
 
+/* =====================================================
+   FIND STUDENT EMAIL (Récupérer email généré automatiquement)
+===================================================== */
+const getStudentEmail = async (firstName, lastName, matricule) => {
+  const Student = require('../students/student.model');
+  
+  // Rechercheruniquement les documents Student qui ont un userId (créé par admin)
+  const query = {
+    firstName: { $regex: `^${firstName}$`, $options: 'i' },
+    lastName: { $regex: `^${lastName}$`, $options: 'i' },
+    userId: { $ne: null } // Seulement les étudiants avec un compte User créé
+  };
+  
+  if (matricule) {
+    query.matricule = matricule;
+  }
+  
+  const student = await Student.findOne(query).populate('userId');
+  
+  if (!student || !student.userId) {
+    throw new Error('Élève non trouvé ou compte non créé');
+  }
+  
+  return {
+    message: 'Email trouvé',
+    email: student.userId.email,
+    firstName: student.firstName,
+    lastName: student.lastName,
+    matricule: student.matricule,
+    hint: 'Utilisez cet email pour vous connecter avec le mot de passe par défaut: 123456'
+  };
+};
+
 module.exports = {
   register,
   activateAccountWithOTP,
@@ -277,4 +316,5 @@ module.exports = {
   joinSchoolWithCode,
   registerStudent,
   changePassword,
+  getStudentEmail,
 };

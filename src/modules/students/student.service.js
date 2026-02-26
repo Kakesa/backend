@@ -24,15 +24,28 @@ const createStudent = async (data, createdByAdmin = false) => {
 
   // 🔐 Si créé par admin, créer un compte User avec mot de passe par défaut
   let userId = null;
-  if (createdByAdmin && data.email) {
+  if (createdByAdmin) {
+    let email = data.email;
+    
+    // 🆔 Générer un email si absent
+    if (!email || !email.trim()) {
+      // Format: firstName.lastName@matricule.local
+      const sanitized = `${data.firstName}.${data.lastName}`.toLowerCase().replace(/\s+/g, '.');
+      email = data.matricule 
+        ? `${sanitized}.${data.matricule}@student.local`
+        : `${sanitized}@student.local`;
+    }
+    
+    email = email.toLowerCase().trim();
+    
     // Vérifier si un utilisateur existe déjà avec cet email
-    const existingUser = await User.findOne({ email: data.email.toLowerCase().trim() });
+    const existingUser = await User.findOne({ email });
     
     if (!existingUser) {
       // Créer un nouveau User avec mot de passe par défaut
       const newUser = await User.create({
         name: `${data.firstName} ${data.lastName}`,
-        email: data.email.toLowerCase().trim(),
+        email,
         password: "123456", // Mot de passe par défaut (min 6 caractères)
         role: "student",
         school: data.school,
@@ -50,6 +63,9 @@ const createStudent = async (data, createdByAdmin = false) => {
       existingUser.school = data.school;
       await existingUser.save();
     }
+    
+    // Stocker l'email généré dans le document Student
+    data.email = email;
   }
 
   // Ajouter userId au student si créé
