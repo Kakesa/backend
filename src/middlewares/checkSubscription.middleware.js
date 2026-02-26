@@ -14,7 +14,7 @@ module.exports = async (req, res, next) => {
 
     let schoolId = req.user?.school?._id || req.user?.school;
 
-    // 🔥 SYNC RESCUE: Si le schoolId est manquant dans l'objet User, on tente de le récupérer depuis le profil lié
+    // SYNC RESCUE: Si le schoolId est manquant dans l'objet User, on tente de le récupérer depuis le profil lié
     if (!schoolId && req.user) {
       let foundSchoolId = null;
       const userId = req.user._id;
