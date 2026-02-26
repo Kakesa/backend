@@ -55,8 +55,29 @@ const createParent = async (data, createdByAdmin = false) => {
   // 🆔 Générer un matricule si absent
   if (!data.matricule) {
     const year = new Date().getFullYear();
-    const count = await Parent.countDocuments({ schoolId: data.schoolId });
-    data.matricule = `PAR-${year}-${String(count + 1).padStart(3, '0')}`;
+    let matriculeGenerated = false;
+    let retries = 0;
+    const maxRetries = 10;
+
+    while (!matriculeGenerated && retries < maxRetries) {
+      const count = await Parent.countDocuments({ schoolId: data.schoolId });
+      data.matricule = `PAR-${year}-${String(count + retries + 1).padStart(3, '0')}`;
+      
+      try {
+        const parent = new Parent(data);
+        return await parent.save();
+      } catch (error) {
+        if (error.code === 11000 && error.keyPattern.matricule) {
+          // Duplicate matricule, retry with a different number
+          retries++;
+          if (retries >= maxRetries) {
+            throw new Error(`Unable to generate unique matricule after ${maxRetries} attempts`);
+          }
+        } else {
+          throw error;
+        }
+      }
+    }
   }
 
   const parent = new Parent(data);
