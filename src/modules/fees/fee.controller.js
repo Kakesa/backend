@@ -31,10 +31,23 @@ const getStudentFees = async (req, res, next) => {
 ===================================================== */
 const recordPayment = async (req, res, next) => {
   try {
+    // Build data object from body
     const data = { 
       ...req.body, 
       receivedBy: req.user._id 
     };
+
+    // Handle uploaded proof files (if any)
+    if (req.files && req.files.length > 0) {
+      // convert to relative URLs accessible via /uploads/proofs/...
+      const proofs = req.files.map(f => {
+        // f.path is absolute, convert to url
+        const relative = f.path.split('uploads')[1];
+        return `/uploads${relative.replace(/\\/g, '/')}`; // unify slashes
+      });
+      data.proofs = proofs;
+    }
+
     const payment = await feeService.recordPayment(data);
     res.status(201).json({ success: true, data: payment });
   } catch (err) {

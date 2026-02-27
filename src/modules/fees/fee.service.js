@@ -41,14 +41,27 @@ const getStudentFees = async (studentId) => {
     .populate("feeDefinitionId")
     .lean();
   
-  return fees.map(f => ({ ...f, id: f._id }));
+  // pour chaque frais, récupérer les paiements liés (incluant justificatifs)
+  const enriched = await Promise.all(fees.map(async f => {
+    const payments = await Payment.find({ studentFeeId: f._id }).lean();
+    return { 
+      ...f, 
+      id: f._id,
+      payments: payments.map(p => ({
+        ...p,
+        id: p._id
+      }))
+    };
+  }));
+
+  return enriched;
 };
 
 /* =====================================================
    RECORD PAYMENT
 ===================================================== */
 const recordPayment = async (data) => {
-  const { studentFeeId, amount, method, reference, receivedBy } = data;
+  const { studentFeeId, amount, method, reference, invoiceNumber, receivedBy, proofs } = data;
 
   const studentFee = await StudentFee.findById(studentFeeId);
   if (!studentFee) throw new Error("Frais introuvable");
@@ -58,19 +71,48 @@ const recordPayment = async (data) => {
   }
 
   // Créer la transaction
-  const payment = await Payment.create({
+  const paymentData = {
     studentId: studentFee.studentId,
     studentFeeId: studentFee._id,
     schoolId: studentFee.schoolId,
     amount,
     method,
     reference,
+    invoiceNumber,
     receivedBy,
-  });
+  };
+
+  if (proofs && Array.isArray(proofs)) {
+    paymentData.proofs = proofs;
+  }
+
+  const payment = await Payment.create(paymentData);
 
   // Mettre à jour le StudentFee
   studentFee.amountPaid += amount;
   await studentFee.save();
+
+  // Notify student (and optionally parent) about payment record
+  try {
+    const student = await Student.findById(studentFee.studentId).populate('userId');
+    if (student && student.userId) {
+      let message = `Un paiement de ${amount} a été enregistré pour ${student.firstName} ${student.lastName}.`;
+      if (payment.proofs && payment.proofs.length > 0) {
+        message += ` Justificatif disponible : ${payment.proofs.join(', ')}`;
+      }
+      await createNotification({
+        userId: student.userId._id,
+        title: 'Paiement enregistré',
+        message,
+        type: 'info',
+      });
+      // optionally email
+      // si un email est défini, on pourrait envoyer un message de confirmation ici
+      // (la fonctionnalité n'est pas implémentée dans le service SMTP actuel)
+    }
+  } catch (notifErr) {
+    console.error('Erreur notification paiement:', notifErr.message);
+  }
 
   return payment;
 };
@@ -206,6 +248,16 @@ const getMyChildrenFees = async (userId) => {
     const fees = await StudentFee.find({ studentId: child._id })
       .populate("feeDefinitionId")
       .lean();
+
+    const enrichedFees = await Promise.all(fees.map(async f => {
+      const payments = await Payment.find({ studentFeeId: f._id }).lean();
+      return {
+        ...f,
+        id: f._id,
+        payments: payments.map(p => ({ ...p, id: p._id })),
+      };
+    }));
+
     results.push({
       student: {
         id: child._id,
@@ -214,7 +266,7 @@ const getMyChildrenFees = async (userId) => {
         matricule: child.matricule,
         class: child.class,
       },
-      fees: fees.map(f => ({ ...f, id: f._id })),
+      fees: enrichedFees,
     });
   }
 

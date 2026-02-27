@@ -73,6 +73,8 @@ const paymentSchema = new mongoose.Schema(
     },
     reference: { type: String, trim: true }, // Check #, Transaction ID, etc.
     note: { type: String, trim: true },
+    proofs: [{ type: String, trim: true }], // URLs of proof documents or images
+    proofs: [{ type: String, trim: true }], // URLs of proof documents or images
     receivedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Admin who recorded it
   },
   { timestamps: true }
