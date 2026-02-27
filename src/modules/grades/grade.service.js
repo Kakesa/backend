@@ -6,15 +6,25 @@ const Student = require("../students/student.model");
 ===================================================== */
 const updateOrCreateGrade = async (data) => {
   const { studentId, subjectId, trimester, academicYear } = data;
+
+  // determine coefficient (maxScore) to use for validation; use provided value or default 20
+  const maxScore = data.maxScore != null ? data.maxScore : 20;
+
+  // validate notes don't exceed coefficient (maxScore)
+  ['interrogation1','interrogation2','devoir','examen'].forEach(field => {
+    if (data[field] != null && data[field] > maxScore) {
+      throw new Error(`La note ${field} (${data[field]}) ne peut pas dépasser le coefficient ${maxScore}`);
+    }
+  });
   
-  // Calculate average if possible
+  // Calculate average if possible (simple arithmetic mean of entered notes)
   const { interrogation1, interrogation2, devoir, examen } = data;
   let total = 0;
   let count = 0;
-  if (interrogation1) { total += interrogation1; count++; }
-  if (interrogation2) { total += interrogation2; count++; }
-  if (devoir) { total += devoir; count++; }
-  if (examen) { total += examen; count++; }
+  if (interrogation1 != null) { total += interrogation1; count++; }
+  if (interrogation2 != null) { total += interrogation2; count++; }
+  if (devoir != null) { total += devoir; count++; }
+  if (examen != null) { total += examen; count++; }
   
   if (count > 0) {
     data.moyenne = total / count;
@@ -27,10 +37,21 @@ const updateOrCreateGrade = async (data) => {
   );
 };
 
+
 /* =====================================================
    BULK CREATE GRADES
 ===================================================== */
 const bulkCreateGrades = async (gradesArray) => {
+  // perform same maxScore validation before bulk write
+  gradesArray.forEach(g => {
+    const maxScore = g.maxScore != null ? g.maxScore : 20;
+    ['interrogation1','interrogation2','devoir','examen'].forEach(field => {
+      if (g[field] != null && g[field] > maxScore) {
+        throw new Error(`La note ${field} (${g[field]}) ne peut pas dépasser le coefficient ${maxScore}`);
+      }
+    });
+  });
+
   const operations = gradesArray.map(g => ({
     updateOne: {
       filter: { 

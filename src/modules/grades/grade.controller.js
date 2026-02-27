@@ -33,6 +33,9 @@ const getGradesByClassAndSubject = async (req, res, next) => {
 
 const createGrade = async (req, res, next) => {
   try {
+    // ensure coefficient (maxScore) defaults to 20 if not supplied
+    if (req.body.maxScore == null) req.body.maxScore = 20;
+
     const data = await gradeService.updateOrCreateGrade(req.body);
     res.status(201).json({ success: true, data });
   } catch (err) {
@@ -51,6 +54,7 @@ const bulkCreateGrades = async (req, res, next) => {
 
 const updateGrade = async (req, res, next) => {
   try {
+    if (req.body.maxScore == null) req.body.maxScore = 20;
     // Reusing the same service method for update as it handles upsert/set
     const data = await gradeService.updateOrCreateGrade({ ...req.body, _id: req.params.id });
     res.status(200).json({ success: true, data });
