@@ -108,6 +108,23 @@ const markConversationAsRead = async (req, res, next) => {
   }
 };
 
+const sendMessageToAllParents = async (req, res, next) => {
+  try {
+    const result = await messageService.sendMessageToAllParents(
+      req.user._id,
+      req.user.school,
+      req.body
+    );
+    res.status(201).json({ 
+      success: true, 
+      message: `Message envoyé à ${result.sentTo} parent(s)`,
+      data: result
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMessagesByUser,
   getInbox,
@@ -121,4 +138,5 @@ module.exports = {
   getContacts,
   getConversationHistory,
   markConversationAsRead,
+  sendMessageToAllParents,
 };

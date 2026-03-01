@@ -133,6 +133,38 @@ const markConversationAsRead = async (userId, otherId) => {
   );
 };
 
+/* =====================================================
+   SEND MESSAGE TO ALL PARENTS (Admin only)
+===================================================== */
+const sendMessageToAllParents = async (senderId, schoolId, { subject, content }) => {
+  // Get all active parents from the school
+  const parents = await User.find({
+    role: "parent",
+    school: schoolId,
+    isActive: true
+  }).select("_id");
+
+  if (parents.length === 0) {
+    throw new Error("Aucun parent trouvé dans cette école");
+  }
+
+  // Create message for each parent
+  const messages = parents.map((parent) => ({
+    senderId,
+    recipientId: parent._id,
+    subject,
+    content
+  }));
+
+  // Insert all messages in bulk
+  const result = await Message.insertMany(messages);
+  return {
+    messageCount: result.length,
+    sentTo: parents.length,
+    messages: result
+  };
+};
+
 module.exports = {
   sendMessage,
   getMessagesByUser,
@@ -146,4 +178,5 @@ module.exports = {
   getContacts,
   getConversationHistory,
   markConversationAsRead,
+  sendMessageToAllParents,
 };

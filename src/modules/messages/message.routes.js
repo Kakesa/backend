@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const messageController = require("./message.controller");
 const { protect } = require("../../middlewares/auth.middleware");
+const { requireAdmin } = require("../../middlewares/checkAdmin.middleware");
 
 router.use(protect);
 
@@ -11,6 +12,7 @@ router.get("/sent/:userId", messageController.getSent);
 router.get("/unread-count/:userId", messageController.getUnreadCount);
 
 router.post("/", messageController.sendMessage);
+router.post("/send-to-all-parents", requireAdmin, messageController.sendMessageToAllParents);
 router.put("/:id/read", messageController.markAsRead);
 router.put("/read-all/:userId", messageController.markAllAsRead);
 router.put("/:id/archive", messageController.archiveMessage);
