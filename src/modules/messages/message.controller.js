@@ -125,6 +125,40 @@ const sendMessageToAllParents = async (req, res, next) => {
   }
 };
 
+const sendMessageToAllTeachers = async (req, res, next) => {
+  try {
+    const result = await messageService.sendMessageToAllTeachers(
+      req.user._id,
+      req.user.school,
+      req.body
+    );
+    res.status(201).json({ 
+      success: true, 
+      message: `Message envoyé à ${result.sentTo} professeur(s)`,
+      data: result
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const sendMessageToAllStudents = async (req, res, next) => {
+  try {
+    const result = await messageService.sendMessageToAllStudents(
+      req.user._id,
+      req.user.school,
+      req.body
+    );
+    res.status(201).json({ 
+      success: true, 
+      message: `Message envoyé à ${result.sentTo} élève(s)`,
+      data: result
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMessagesByUser,
   getInbox,
@@ -139,4 +173,6 @@ module.exports = {
   getConversationHistory,
   markConversationAsRead,
   sendMessageToAllParents,
+  sendMessageToAllTeachers,
+  sendMessageToAllStudents,
 };

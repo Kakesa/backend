@@ -13,6 +13,8 @@ router.get("/unread-count/:userId", messageController.getUnreadCount);
 
 router.post("/", messageController.sendMessage);
 router.post("/send-to-all-parents", requireAdmin, messageController.sendMessageToAllParents);
+router.post("/send-to-all-teachers", requireAdmin, messageController.sendMessageToAllTeachers);
+router.post("/send-to-all-students", requireAdmin, messageController.sendMessageToAllStudents);
 router.put("/:id/read", messageController.markAsRead);
 router.put("/read-all/:userId", messageController.markAllAsRead);
 router.put("/:id/archive", messageController.archiveMessage);

@@ -165,6 +165,70 @@ const sendMessageToAllParents = async (senderId, schoolId, { subject, content })
   };
 };
 
+/* =====================================================
+   SEND MESSAGE TO ALL TEACHERS (Admin only)
+===================================================== */
+const sendMessageToAllTeachers = async (senderId, schoolId, { subject, content }) => {
+  // Get all active teachers from the school
+  const teachers = await User.find({
+    role: "teacher",
+    school: schoolId,
+    isActive: true
+  }).select("_id");
+
+  if (teachers.length === 0) {
+    throw new Error("Aucun professeur trouvé dans cette école");
+  }
+
+  // Create message for each teacher
+  const messages = teachers.map((teacher) => ({
+    senderId,
+    recipientId: teacher._id,
+    subject,
+    content
+  }));
+
+  // Insert all messages in bulk
+  const result = await Message.insertMany(messages);
+  return {
+    messageCount: result.length,
+    sentTo: teachers.length,
+    messages: result
+  };
+};
+
+/* =====================================================
+   SEND MESSAGE TO ALL STUDENTS (Admin only)
+===================================================== */
+const sendMessageToAllStudents = async (senderId, schoolId, { subject, content }) => {
+  // Get all active students from the school
+  const students = await User.find({
+    role: "student",
+    school: schoolId,
+    isActive: true
+  }).select("_id");
+
+  if (students.length === 0) {
+    throw new Error("Aucun élève trouvé dans cette école");
+  }
+
+  // Create message for each student
+  const messages = students.map((student) => ({
+    senderId,
+    recipientId: student._id,
+    subject,
+    content
+  }));
+
+  // Insert all messages in bulk
+  const result = await Message.insertMany(messages);
+  return {
+    messageCount: result.length,
+    sentTo: students.length,
+    messages: result
+  };
+};
+
 module.exports = {
   sendMessage,
   getMessagesByUser,
@@ -179,4 +243,6 @@ module.exports = {
   getConversationHistory,
   markConversationAsRead,
   sendMessageToAllParents,
+  sendMessageToAllTeachers,
+  sendMessageToAllStudents,
 };
