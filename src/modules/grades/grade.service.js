@@ -76,7 +76,10 @@ const getGrades = async (query = {}) => {
 
   if (studentId) filter.studentId = studentId;
   if (subjectId) filter.subjectId = subjectId;
-  if (trimester) filter.trimester = trimester;
+  // Convert trimester to number if provided (query params come as strings)
+  if (trimester && trimester !== "annual") {
+    filter.trimester = parseInt(trimester, 10);
+  }
   if (academicYear) filter.academicYear = academicYear;
 
   // Filter by classId if provided (need to find students in that class)
