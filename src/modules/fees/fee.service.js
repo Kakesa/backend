@@ -1,7 +1,7 @@
 const { FeeDefinition, StudentFee, Payment } = require("./fee.model");
 const Student = require("../students/student.model");
 const { createNotification } = require("../notifications/notification.service");
-const { Parent } = require("../parents/parent.model");
+const { Parent, ParentStudent } = require("../parents/parent.model");
 const Teacher = require("../teachers/teacher.model");
 
 /* =====================================================
@@ -238,13 +238,18 @@ const getMyFees = async (userId) => {
    GET MY CHILDREN FEES (FOR LOGGED-IN PARENT)
 ===================================================== */
 const getMyChildrenFees = async (userId) => {
-  const parent = await Parent.findOne({ userId }).populate("children");
+  const parent = await Parent.findOne({ userId });
   if (!parent) throw new Error("Profil parent introuvable");
+
+  // Fetch children links
+  const links = await ParentStudent.find({ parentId: parent._id })
+    .populate("studentId")
+    .lean();
+
+  const children = links.map(l => l.studentId).filter(Boolean);
 
   // Auto-sync fees for school before displaying
   await syncAllStudentFees(parent.schoolId);
-
-  const children = parent.children || [];
   const results = [];
 
   for (const child of children) {

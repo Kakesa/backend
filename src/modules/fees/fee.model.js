@@ -74,7 +74,6 @@ const paymentSchema = new mongoose.Schema(
     reference: { type: String, trim: true }, // Check #, Transaction ID, etc.
     note: { type: String, trim: true },
     proofs: [{ type: String, trim: true }], // URLs of proof documents or images
-    proofs: [{ type: String, trim: true }], // URLs of proof documents or images
     status: {
       type: String,
       enum: ["PENDING", "SUCCESS", "FAILED"],
