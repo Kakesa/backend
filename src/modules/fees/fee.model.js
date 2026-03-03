@@ -32,10 +32,10 @@ const studentFeeSchema = new mongoose.Schema(
     totalAmount: { type: Number, required: true }, // Copié de FeeDefinition au moment de l'attribution
     amountPaid: { type: Number, default: 0 },
     balance: { type: Number, required: true }, // totalAmount - amountPaid
-    status: { 
-      type: String, 
-      enum: ["UNPAID", "PARTIAL", "PAID", "OVERDUE"], 
-      default: "UNPAID" 
+    status: {
+      type: String,
+      enum: ["UNPAID", "PARTIAL", "PAID", "OVERDUE"],
+      default: "UNPAID"
     },
     lastReminderDate: { type: Date },
   },
@@ -66,15 +66,20 @@ const paymentSchema = new mongoose.Schema(
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: "School", required: true },
     amount: { type: Number, required: true, min: 1 },
     paymentDate: { type: Date, default: Date.now },
-    method: { 
-      type: String, 
-      enum: ["CASH", "BANK_TRANSFER", "MOBILE_MONEY", "CREDIT_CARD"], 
-      default: "CASH" 
+    method: {
+      type: String,
+      enum: ["CASH", "BANK_TRANSFER", "MOBILE_MONEY", "CREDIT_CARD"],
+      default: "CASH"
     },
     reference: { type: String, trim: true }, // Check #, Transaction ID, etc.
     note: { type: String, trim: true },
     proofs: [{ type: String, trim: true }], // URLs of proof documents or images
     proofs: [{ type: String, trim: true }], // URLs of proof documents or images
+    status: {
+      type: String,
+      enum: ["PENDING", "SUCCESS", "FAILED"],
+      default: "SUCCESS"
+    },
     receivedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Admin who recorded it
   },
   { timestamps: true }

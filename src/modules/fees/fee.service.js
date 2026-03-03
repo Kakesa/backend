@@ -17,7 +17,7 @@ const createFeeDefinition = async (data) => {
   }
 
   const students = await Student.find(studentFilter);
-  
+
   const studentFees = students.map(student => ({
     studentId: student._id,
     feeDefinitionId: feeDef._id,
@@ -40,12 +40,12 @@ const getStudentFees = async (studentId) => {
   const fees = await StudentFee.find({ studentId })
     .populate("feeDefinitionId")
     .lean();
-  
+
   // pour chaque frais, récupérer les paiements liés (incluant justificatifs)
   const enriched = await Promise.all(fees.map(async f => {
     const payments = await Payment.find({ studentFeeId: f._id }).lean();
-    return { 
-      ...f, 
+    return {
+      ...f,
       id: f._id,
       payments: payments.map(p => ({
         ...p,
@@ -153,7 +153,7 @@ const sendReminder = async (studentFeeId, senderId) => {
     try {
       const { sendMessage } = require("../messages/message.service");
       await sendMessage({
-        senderId: senderId, 
+        senderId: senderId,
         recipientId: student.userId._id,
         content: `Ceci est un rappel automatique concernant les frais : ${feeName}. Solde restant : ${balance} USD.`,
         subject: "Rappel Frais Scolaires"
@@ -213,11 +213,11 @@ const getAllFeeStatuses = async (schoolId, query = {}) => {
 ===================================================== */
 const checkStudentPaymentStatus = async (studentId) => {
   const fees = await StudentFee.find({ studentId });
-  
+
   if (fees.length === 0) return { isPaid: true, status: "NO_FEES" };
 
   const unpaidFees = fees.filter(f => f.status !== "PAID");
-  
+
   return {
     isPaid: unpaidFees.length === 0,
     status: unpaidFees.length === 0 ? "PAID" : "UNPAID",
@@ -240,6 +240,9 @@ const getMyFees = async (userId) => {
 const getMyChildrenFees = async (userId) => {
   const parent = await Parent.findOne({ userId }).populate("children");
   if (!parent) throw new Error("Profil parent introuvable");
+
+  // Auto-sync fees for school before displaying
+  await syncAllStudentFees(parent.schoolId);
 
   const children = parent.children || [];
   const results = [];
@@ -315,6 +318,46 @@ const getClassFeeStatus = async (userId, classId) => {
   return results;
 };
 
+/**
+ * Synchronize all active students with missing fee definitions
+ * Ensures no student is left without a fee record they should have.
+ */
+const syncAllStudentFees = async (schoolId) => {
+  const feeDefs = await FeeDefinition.find({ schoolId, status: "ACTIVE" });
+  const students = await Student.find({ school: schoolId, status: "ACTIVE" });
+
+  let createdCount = 0;
+
+  for (const feeDef of feeDefs) {
+    // Filter students target for this fee
+    const targetStudents = students.filter(student => {
+      if (!feeDef.targetClasses || feeDef.targetClasses.length === 0) return true;
+      return feeDef.targetClasses.some(id => id.toString() === student.class?.toString());
+    });
+
+    for (const student of targetStudents) {
+      // Check if record exists
+      const existing = await StudentFee.findOne({
+        studentId: student._id,
+        feeDefinitionId: feeDef._id
+      });
+
+      if (!existing) {
+        await StudentFee.create({
+          studentId: student._id,
+          feeDefinitionId: feeDef._id,
+          schoolId,
+          totalAmount: feeDef.amount,
+          balance: feeDef.amount,
+        });
+        createdCount++;
+      }
+    }
+  }
+
+  return createdCount;
+};
+
 module.exports = {
   createFeeDefinition,
   getStudentFees,
@@ -325,4 +368,5 @@ module.exports = {
   getMyFees,
   getMyChildrenFees,
   getClassFeeStatus,
+  syncAllStudentFees,
 };
