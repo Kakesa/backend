@@ -4,13 +4,12 @@ const expenseController = require("./expense.controller");
 const restrictTo = require("../../middlewares/role.middleware");
 
 // Les routes sont déjà protégées par 'protect' dans src/routes.js
-router.use(restrictTo("admin", "accountant", "superadmin"));
+router.get("/", restrictTo("admin", "accountant", "superadmin"), expenseController.getAllExpenses);
+router.get("/stats", restrictTo("admin", "accountant", "superadmin"), expenseController.getExpenseStats);
+router.get("/:id", restrictTo("admin", "accountant", "superadmin"), expenseController.getExpenseById);
 
-router.post("/", expenseController.createExpense);
-router.get("/", expenseController.getAllExpenses);
-router.get("/stats", expenseController.getExpenseStats);
-router.get("/:id", expenseController.getExpenseById);
-router.put("/:id", expenseController.updateExpense);
-router.delete("/:id", expenseController.deleteExpense);
+router.post("/", restrictTo("accountant", "superadmin"), expenseController.createExpense);
+router.put("/:id", restrictTo("accountant", "superadmin"), expenseController.updateExpense);
+router.delete("/:id", restrictTo("accountant", "superadmin"), expenseController.deleteExpense);
 
 module.exports = router;

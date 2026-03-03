@@ -29,7 +29,7 @@ const proofUpload = multer({
     const allowed = ['.png', '.jpg', '.jpeg', '.svg', '.pdf'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (!allowed.includes(ext)) {
-      return cb(new Error('Type de fichier non autorisé pour justificatif')); 
+      return cb(new Error('Type de fichier non autorisé pour justificatif'));
     }
     cb(null, true);
   }
@@ -38,11 +38,13 @@ const proofUpload = multer({
 // Toutes les routes sont protégées
 router.use(protect);
 
+const restrictTo = require("../../middlewares/role.middleware");
+
 // Routes Admin/Staff
-router.post("/definitions", feeController.createFeeDefinition);
-router.get("/status", feeController.getAllFeeStatuses);
-router.post("/payments", proofUpload.array('proofs', 5), feeController.recordPayment);
-router.post("/reminders/:studentFeeId", feeController.sendReminder);
+router.post("/definitions", restrictTo("accountant", "superadmin"), feeController.createFeeDefinition);
+router.get("/status", restrictTo("admin", "accountant", "superadmin"), feeController.getAllFeeStatuses);
+router.post("/payments", restrictTo("accountant", "superadmin"), proofUpload.array('proofs', 5), feeController.recordPayment);
+router.post("/reminders/:studentFeeId", restrictTo("accountant", "superadmin"), feeController.sendReminder);
 
 // Routes spécifiques par rôle
 router.get("/me", feeController.getMyFees); // Student
