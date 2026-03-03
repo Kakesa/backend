@@ -67,8 +67,40 @@ const deleteAssignment = async (id) => {
 /* =====================================================
    SUBMISSION SERVICE
 ===================================================== */
+const _transcribeToGradebook = async (assignmentId, studentId, grade) => {
+  try {
+    const assignment = await Assignment.findById(assignmentId);
+    const course = await Course.findById(assignment.courseId);
+
+    if (assignment && course) {
+      const trimester = assignment.trimester || 1;
+      const academicYear = assignment.academicYear || "2026-2027";
+      const subjectId = course.subjectId;
+
+      // Determine which field to update in the Grade model
+      let field = "devoir"; // default
+      if (assignment.type === "tp" || assignment.type === "projet") {
+        field = "interrogation1";
+      } else if (assignment.type === "exposé") {
+        field = "interrogation2";
+      }
+
+      await gradeService.updateOrCreateGrade({
+        studentId,
+        subjectId,
+        trimester,
+        academicYear,
+        [field]: grade,
+        maxScore: assignment.maxPoints || 20
+      });
+    }
+  } catch (error) {
+    console.error("Error transcribing grade to gradebook:", error);
+  }
+};
+
 const submitAssignment = async (data) => {
-  const { assignmentId, studentId } = data;
+  const { assignmentId, studentId, answers } = data;
 
   // Check if assignment exists
   const assignment = await Assignment.findById(assignmentId);
@@ -76,15 +108,54 @@ const submitAssignment = async (data) => {
 
   // Calculate status (late vs submitted)
   const now = new Date();
-  const status = now > assignment.dueDate ? "late" : "submitted";
+  let status = now > assignment.dueDate ? "late" : "submitted";
+  let grade = null;
 
-  return await Submission.findOneAndUpdate(
+  // AUTO-GRADING LOGIC
+  // If assignment has questions, calculate score
+  if (assignment.questions && assignment.questions.length > 0) {
+    let autoScore = 0;
+    const studentAnswers = answers || [];
+    const isFullyAutoCorrectable = assignment.questions.every(q =>
+      q.type === 'qcm' || (q.type === 'short_answer' && q.correctAnswer)
+    );
+
+    if (isFullyAutoCorrectable) {
+      assignment.questions.forEach(q => {
+        const studentAns = studentAnswers.find(a => a.questionId === q.id)?.value;
+        if (!studentAns) return;
+
+        if (q.type === 'qcm') {
+          const correctOpt = q.options.find(o => o.isCorrect);
+          if (correctOpt && studentAns === correctOpt.id) {
+            autoScore += (q.points || 0);
+          }
+        } else if (q.type === 'short_answer' && q.correctAnswer) {
+          if (studentAns.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
+            autoScore += (q.points || 0);
+          }
+        }
+      });
+
+      grade = autoScore;
+      status = "graded"; // Mark as graded immediately
+    }
+  }
+
+  const submission = await Submission.findOneAndUpdate(
     { assignmentId, studentId },
     {
-      $set: { ...data, status, submittedAt: now }
+      $set: { ...data, status, submittedAt: now, grade }
     },
     { upsert: true, new: true, runValidators: true }
   );
+
+  // If auto-graded, transcribe to gradebook
+  if (status === "graded" && grade !== null) {
+    await _transcribeToGradebook(assignmentId, studentId, grade);
+  }
+
+  return submission;
 };
 
 const getSubmission = async (assignmentId, studentId) => {
@@ -92,10 +163,8 @@ const getSubmission = async (assignmentId, studentId) => {
 };
 
 const getPendingSubmissions = async (teacherId) => {
-  // Find all assignments for this teacher
   const assignments = await Assignment.find({ teacherId }).distinct("_id");
 
-  // Find submissions for these assignments that are submitted or late (not yet graded)
   return await Submission.find({
     assignmentId: { $in: assignments },
     status: { $in: ["submitted", "late"] }
@@ -118,36 +187,7 @@ const gradeSubmission = async (assignmentId, studentId, gradeData) => {
   if (!submission) throw { statusCode: 404, message: "Remise introuvable" };
 
   // --- TRANSCRIPTION TO GRADEBOOK ---
-  try {
-    const assignment = await Assignment.findById(assignmentId);
-    const course = await Course.findById(assignment.courseId);
-
-    if (assignment && course) {
-      const trimester = assignment.trimester || 1;
-      const academicYear = assignment.academicYear || "2026-2027";
-      const subjectId = course.subjectId;
-
-      // Determine which field to update in the Grade model
-      let field = "devoir"; // default
-      if (assignment.type === "tp" || assignment.type === "projet") {
-        field = "interrogation1"; // or some logic to pick first null?
-      } else if (assignment.type === "exposé") {
-        field = "interrogation2";
-      }
-
-      await gradeService.updateOrCreateGrade({
-        studentId,
-        subjectId,
-        trimester,
-        academicYear,
-        [field]: grade,
-        maxScore: assignment.maxPoints || 20
-      });
-    }
-  } catch (error) {
-    console.error("Error transcribing grade to gradebook:", error);
-    // We don't throw here to avoid failing the submission grading if gradebook update fails
-  }
+  await _transcribeToGradebook(assignmentId, studentId, grade);
 
   return submission;
 };
