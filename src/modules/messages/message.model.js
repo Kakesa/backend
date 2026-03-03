@@ -21,6 +21,21 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    type: {
+      type: String,
+      enum: ["text", "image", "audio", "file", "video"],
+      default: "text",
+    },
+    metadata: {
+      type: Object,
+      default: {},
+    },
+    reactions: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        emoji: String,
+      },
+    ],
     isRead: {
       type: Boolean,
       default: false,

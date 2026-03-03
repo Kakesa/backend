@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
     },
 
-   role: {
+    role: {
       type: String,
       enum: ['superadmin', 'admin', 'teacher', 'student', 'parent', 'accountant'],
       index: true, // toujours utile si tu fais des recherches par rôle
@@ -83,6 +83,12 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    pinnedContacts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   {
     timestamps: true,
