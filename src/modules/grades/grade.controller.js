@@ -83,6 +83,25 @@ const getStudentAverage = async (req, res, next) => {
   }
 };
 
+const getRanking = async (req, res, next) => {
+  try {
+    const data = await gradeService.getRanking(req.query);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getSchoolAverages = async (req, res, next) => {
+  try {
+    const { academicYear } = req.query;
+    const data = await gradeService.getSchoolAverages(academicYear);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getGrades,
   getGradesByStudent,
@@ -92,4 +111,6 @@ module.exports = {
   updateGrade,
   deleteGrade,
   getStudentAverage,
+  getRanking,
+  getSchoolAverages
 };
