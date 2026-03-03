@@ -1,5 +1,7 @@
 const { Assignment, Submission } = require("./assignment.model");
 const Student = require("../students/student.model");
+const gradeService = require("../grades/grade.service");
+const Course = require("../courses/course.model");
 
 /* =====================================================
    ASSIGNMENT SERVICE
@@ -16,7 +18,7 @@ const getAssignments = async (query = {}) => {
   if (teacherId) filter.teacherId = teacherId;
   if (classId) filter.classId = classId;
   if (type) filter.type = type;
-  
+
   if (studentId) {
     const student = await Student.findById(studentId).lean();
     if (student) filter.classId = student.class;
@@ -55,7 +57,7 @@ const updateAssignment = async (id, data) => {
 const deleteAssignment = async (id) => {
   const assignment = await Assignment.findById(id);
   if (!assignment) throw { statusCode: 404, message: "Devoir introuvable" };
-  
+
   // Delete associated submissions
   await Submission.deleteMany({ assignmentId: id });
   await Assignment.deleteOne({ _id: id });
@@ -67,7 +69,7 @@ const deleteAssignment = async (id) => {
 ===================================================== */
 const submitAssignment = async (data) => {
   const { assignmentId, studentId } = data;
-  
+
   // Check if assignment exists
   const assignment = await Assignment.findById(assignmentId);
   if (!assignment) throw { statusCode: 404, message: "Devoir introuvable" };
@@ -78,8 +80,8 @@ const submitAssignment = async (data) => {
 
   return await Submission.findOneAndUpdate(
     { assignmentId, studentId },
-    { 
-      $set: { ...data, status, submittedAt: now } 
+    {
+      $set: { ...data, status, submittedAt: now }
     },
     { upsert: true, new: true, runValidators: true }
   );
@@ -92,11 +94,11 @@ const getSubmission = async (assignmentId, studentId) => {
 const getPendingSubmissions = async (teacherId) => {
   // Find all assignments for this teacher
   const assignments = await Assignment.find({ teacherId }).distinct("_id");
-  
+
   // Find submissions for these assignments that are submitted or late (not yet graded)
-  return await Submission.find({ 
-    assignmentId: { $in: assignments }, 
-    status: { $in: ["submitted", "late"] } 
+  return await Submission.find({
+    assignmentId: { $in: assignments },
+    status: { $in: ["submitted", "late"] }
   })
     .populate("studentId", "firstName lastName matricule photo")
     .populate("assignmentId", "title type dueDate maxPoints")
@@ -106,11 +108,48 @@ const getPendingSubmissions = async (teacherId) => {
 
 const gradeSubmission = async (assignmentId, studentId, gradeData) => {
   const { grade, feedback } = gradeData;
-  return await Submission.findOneAndUpdate(
+
+  const submission = await Submission.findOneAndUpdate(
     { assignmentId, studentId },
     { $set: { grade, feedback, status: "graded" } },
     { new: true }
   );
+
+  if (!submission) throw { statusCode: 404, message: "Remise introuvable" };
+
+  // --- TRANSCRIPTION TO GRADEBOOK ---
+  try {
+    const assignment = await Assignment.findById(assignmentId);
+    const course = await Course.findById(assignment.courseId);
+
+    if (assignment && course) {
+      const trimester = assignment.trimester || 1;
+      const academicYear = assignment.academicYear || "2026-2027";
+      const subjectId = course.subjectId;
+
+      // Determine which field to update in the Grade model
+      let field = "devoir"; // default
+      if (assignment.type === "tp" || assignment.type === "projet") {
+        field = "interrogation1"; // or some logic to pick first null?
+      } else if (assignment.type === "exposé") {
+        field = "interrogation2";
+      }
+
+      await gradeService.updateOrCreateGrade({
+        studentId,
+        subjectId,
+        trimester,
+        academicYear,
+        [field]: grade,
+        maxScore: assignment.maxPoints || 20
+      });
+    }
+  } catch (error) {
+    console.error("Error transcribing grade to gradebook:", error);
+    // We don't throw here to avoid failing the submission grading if gradebook update fails
+  }
+
+  return submission;
 };
 
 module.exports = {

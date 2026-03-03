@@ -45,6 +45,48 @@ const assignmentSchema = new mongoose.Schema(
         type: String, // URLs
       }
     ],
+    questions: [
+      {
+        id: String,
+        text: String,
+        type: {
+          type: String,
+          enum: ["qcm", "short_answer", "long_answer"],
+        },
+        points: Number,
+        exercise: String,
+        options: [
+          {
+            id: String,
+            text: String,
+            isCorrect: Boolean,
+          }
+        ],
+        correctAnswer: String,
+      }
+    ],
+    rubric: [
+      {
+        id: String,
+        criteria: String,
+        description: String,
+        maxPoints: Number,
+      }
+    ],
+    isWorksheet: {
+      type: Boolean,
+      default: false,
+    },
+    trimester: {
+      type: Number,
+      enum: [1, 2, 3],
+      default: 1,
+    },
+    academicYear: {
+      type: String,
+      required: true,
+      default: "2026-2027",
+    },
     status: {
       type: String,
       enum: ["published", "draft", "closed"],
@@ -75,7 +117,7 @@ const submissionSchema = new mongoose.Schema(
     },
     studentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Student", // Ensure Student model exists
+      ref: "Student",
       required: true,
     },
     content: {
@@ -95,6 +137,19 @@ const submissionSchema = new mongoose.Schema(
     linkUrl: {
       type: String,
     },
+    answers: [
+      {
+        questionId: String,
+        value: String,
+      }
+    ],
+    selfReview: [
+      {
+        rubricId: String,
+        score: Number,
+        comment: String,
+      }
+    ],
     grade: {
       type: Number,
       default: null,
