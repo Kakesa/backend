@@ -1,7 +1,7 @@
 const { FeeDefinition, StudentFee, Payment } = require("./fee.model");
 const Student = require("../students/student.model");
 const { createNotification } = require("../notifications/notification.service");
-const Parent = require("../parents/parent.model");
+const { Parent } = require("../parents/parent.model");
 const Teacher = require("../teachers/teacher.model");
 
 /* =====================================================
