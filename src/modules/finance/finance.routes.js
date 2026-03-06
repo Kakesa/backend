@@ -7,5 +7,6 @@ const restrictTo = require("../../middlewares/role.middleware");
 router.use(restrictTo("admin", "accountant", "superadmin"));
 
 router.get("/dashboard", financeController.getDashboardStats);
+router.get("/journal", financeController.getJournal);
 
 module.exports = router;
