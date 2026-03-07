@@ -135,7 +135,7 @@ const getJournalEntries = async (schoolId, filters = {}) => {
         populate: { path: "feeDefinitionId", select: "name category" },
       })
       .lean(),
-    Expense.find(expenseQuery).lean(),
+    Expense.find(expenseQuery).populate("recordedBy", "name").lean(),
   ]);
 
   let entries = [];
@@ -144,6 +144,10 @@ const getJournalEntries = async (schoolId, filters = {}) => {
     const incomeEntries = payments.map((p) => {
       const feeDef = p.studentFeeId?.feeDefinitionId;
       const student = p.studentId;
+      const studentName =
+        student && [student.firstName, student.lastName].filter(Boolean).length
+          ? [student.firstName, student.lastName].filter(Boolean).join(" ").trim()
+          : "—";
 
       return {
         id: p._id,
@@ -157,13 +161,11 @@ const getJournalEntries = async (schoolId, filters = {}) => {
           (feeDef ? `Paiement - ${feeDef.name}` : "Paiement frais scolaire"),
         method: p.method,
         reference: p.reference,
-        student: student
-          ? {
-              id: student._id,
-              name: `${student.firstName} ${student.lastName}`,
-              matricule: student.matricule,
-            }
-          : null,
+        student: {
+          id: student?._id ?? null,
+          name: studentName,
+          matricule: student?.matricule ?? null,
+        },
         meta: {
           paymentId: p._id,
           studentFeeId: p.studentFeeId?._id,
@@ -185,9 +187,10 @@ const getJournalEntries = async (schoolId, filters = {}) => {
       method: null,
       reference: null,
       student: null,
+      recordedByName: e.recordedBy?.name ?? "—",
       meta: {
         expenseId: e._id,
-        recordedBy: e.recordedBy,
+        recordedBy: e.recordedBy?._id ?? e.recordedBy,
       },
     }));
     entries = entries.concat(expenseEntries);

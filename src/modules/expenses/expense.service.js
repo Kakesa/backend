@@ -3,7 +3,12 @@ const { ObjectId } = mongoose.Types;
 const Expense = require("./expense.model");
 
 const createExpense = async (data) => {
-    return await Expense.create(data);
+    const expense = await Expense.create(data);
+    const populated = await Expense.findById(expense._id).populate("recordedBy", "name").lean();
+    return {
+        ...populated,
+        recordedByName: populated.recordedBy?.name ?? "—",
+    };
 };
 
 const getAllExpenses = async (schoolId, query = {}) => {
@@ -17,18 +22,34 @@ const getAllExpenses = async (schoolId, query = {}) => {
         if (endDate) filter.date.$lte = new Date(endDate);
     }
 
-    return await Expense.find(filter)
-        .populate("recordedBy", "firstName lastName")
+    const expenses = await Expense.find(filter)
+        .populate("recordedBy", "name")
         .sort({ date: -1 })
         .lean();
+    return expenses.map((e) => ({
+        ...e,
+        recordedByName: e.recordedBy?.name ?? "—",
+    }));
 };
 
 const getExpenseById = async (id) => {
-    return await Expense.findById(id).populate("recordedBy", "firstName lastName");
+    const expense = await Expense.findById(id).populate("recordedBy", "name").lean();
+    if (!expense) return null;
+    return {
+        ...expense,
+        recordedByName: expense.recordedBy?.name ?? "—",
+    };
 };
 
 const updateExpense = async (id, data) => {
-    return await Expense.findByIdAndUpdate(id, data, { new: true });
+    const expense = await Expense.findByIdAndUpdate(id, data, { new: true })
+        .populate("recordedBy", "name")
+        .lean();
+    if (!expense) return null;
+    return {
+        ...expense,
+        recordedByName: expense.recordedBy?.name ?? "—",
+    };
 };
 
 const deleteExpense = async (id) => {
