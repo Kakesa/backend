@@ -1,6 +1,5 @@
 const Subscription = require('./subscription.model');
 const School = require('../schools/school.model');
-const redis = require('../../config/redis');
 
 
 /* ===========================
@@ -19,9 +18,6 @@ const upsertSubscription = async ({ schoolId, plan, durationMonths }) => {
 
   // 🔁 Sync direct dans School.subscription
   await School.findByIdAndUpdate(schoolId, { subscription: subscription._id });
-
-  // 🔥 Update cache Redis
-  await redis.set(`school:${schoolId}:subscription`, JSON.stringify(subscription), 'EX', 3600);
 
   return subscription;
 };
@@ -53,9 +49,6 @@ const createTrialSubscription = async (schoolId) => {
     'subscription.startDate': startDate,
     'subscription.endDate': endDate
   });
-
-  // 🔥 Update cache Redis
-  await redis.set(`school:${schoolId}:subscription`, JSON.stringify(subscription), 'EX', 3600);
 
   return subscription;
 };

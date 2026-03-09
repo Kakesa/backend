@@ -1,4 +1,3 @@
-const redis = require('../config/redis');
 const School = require('../modules/schools/school.model');
 const User = require('../modules/users/users.model');
 const Student = require('../modules/students/student.model');
@@ -41,32 +40,21 @@ module.exports = async (req, res, next) => {
       return res.status(403).json({ message: 'Aucune école associée' });
     }
 
-    // 🔥 Clé Redis
-    const redisKey = `school:${schoolId}:subscription`;
-
-    // 1️⃣ Essayer de récupérer depuis Redis
-    let subscription = await redis.get(redisKey);
-    if (subscription) {
-      subscription = JSON.parse(subscription);
-    } else {
-      // 2️⃣ Sinon récupérer depuis MongoDB
-      const school = await School.findById(schoolId).lean();
-      if (!school) {
-        return res.status(404).json({ message: 'École introuvable' });
-      }
-
-      // Check school status first (Superadmin deactivation)
-      if (school.status !== 'active') {
-        return res.status(403).json({
-          message: 'Cette école a été désactivée par le super-administrateur',
-          reason: 'SCHOOL_DEACTIVATED'
-        });
-      }
-
-      subscription = school.subscription;
-      // 3️⃣ Stocker dans Redis 1h
-      await redis.set(redisKey, JSON.stringify(subscription), 'EX', 3600);
+    // 1️⃣ Récupérer depuis MongoDB
+    const school = await School.findById(schoolId).lean();
+    if (!school) {
+      return res.status(404).json({ message: 'École introuvable' });
     }
+
+    // Check school status first (Superadmin deactivation)
+    if (school.status !== 'active') {
+      return res.status(403).json({
+        message: 'Cette école a été désactivée par le super-administrateur',
+        reason: 'SCHOOL_DEACTIVATED'
+      });
+    }
+
+    const subscription = school.subscription;
 
     // ❌ Vérification statut de l'abonnement
     const allowedStatuses = ['active', 'trial', 'free'];

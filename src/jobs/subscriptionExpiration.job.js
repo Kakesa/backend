@@ -1,7 +1,6 @@
 const cron = require('node-cron');
 const Subscription = require('../modules/subscriptions/subscription.model');
 const School = require('../modules/schools/school.model');
-const redis = require('../config/redis');
 
 cron.schedule('0 0 * * *', async () => {
   console.log('⏰ Vérification des abonnements expirés...');
@@ -15,9 +14,6 @@ cron.schedule('0 0 * * *', async () => {
 
     // Sync School.subscription
     await School.findByIdAndUpdate(sub.school, { subscription: sub._id });
-
-    // Supprimer du cache Redis
-    await redis.del(`school:${sub.school}:subscription`);
 
     console.log(`❌ Abonnement ${sub._id} expiré et mis à jour`);
   }
