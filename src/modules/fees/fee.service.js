@@ -363,6 +363,185 @@ const syncAllStudentFees = async (schoolId) => {
   return createdCount;
 };
 
+/**
+ * Send automatic reminders for overdue and upcoming fees
+ * This function should be called by a scheduled job (cron)
+ */
+const sendAutomaticReminders = async () => {
+  try {
+    const today = new Date();
+    const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const threeDaysFromNow = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+    // Find all fees with due dates in the next 7 days
+    const upcomingFees = await StudentFee.aggregate([
+      {
+        $match: {
+          balance: { $gt: 0 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'feedefinitions',
+          localField: 'feeDefinitionId',
+          foreignField: '_id',
+          as: 'feeDefinition'
+        }
+      },
+      {
+        $unwind: '$feeDefinition'
+      },
+      {
+        $match: {
+          'feeDefinition.dueDate': {
+            $gte: today,
+            $lte: sevenDaysFromNow
+          }
+        }
+      }
+    ]);
+
+    // Find all overdue fees
+    const overdueFees = await StudentFee.aggregate([
+      {
+        $match: {
+          balance: { $gt: 0 },
+          $or: [
+            { lastReminderDate: { $exists: false } },
+            { lastReminderDate: { $lte: threeDaysFromNow } }
+          ]
+        }
+      },
+      {
+        $lookup: {
+          from: 'feedefinitions',
+          localField: 'feeDefinitionId',
+          foreignField: '_id',
+          as: 'feeDefinition'
+        }
+      },
+      {
+        $unwind: '$feeDefinition'
+      },
+      {
+        $match: {
+          'feeDefinition.dueDate': { $lt: today }
+        }
+      }
+    ]);
+
+    // Populate student information
+    const upcomingFeesWithStudents = await StudentFee.populate(upcomingFees, { path: 'studentId' });
+    const overdueFeesWithStudents = await StudentFee.populate(overdueFees, { path: 'studentId' });
+
+    const allFeesToRemind = [...upcomingFeesWithStudents, ...overdueFeesWithStudents];
+
+    for (const fee of allFeesToRemind) {
+      const daysUntilDue = Math.ceil(
+        (fee.feeDefinition.dueDate - today) / (1000 * 60 * 60 * 24)
+      );
+
+      let reminderType, message, priority;
+
+      if (daysUntilDue < 0) {
+        reminderType = 'OVERDUE';
+        priority = 'high';
+        message = `RAPPEL URGENT: Les frais scolaires "${fee.feeDefinition.name}" de ${fee.studentId.firstName} ${fee.studentId.lastName} sont en retard de ${Math.abs(daysUntilDue)} jour(s). Montant dû: ${fee.balance} $`;
+      } else if (daysUntilDue <= 3) {
+        reminderType = 'URGENT';
+        priority = 'high';
+        message = `RAPPEU: Les frais scolaires "${fee.feeDefinition.name}" de ${fee.studentId.firstName} ${fee.studentId.lastName} sont dus dans ${daysUntilDue} jour(s). Montant: ${fee.balance} $`;
+      } else if (daysUntilDue <= 7) {
+        reminderType = 'REMINDER';
+        priority = 'medium';
+        message = `Rappel: Les frais scolaires "${fee.feeDefinition.name}" de ${fee.studentId.firstName} ${fee.studentId.lastName} sont dus dans ${daysUntilDue} jour(s). Montant: ${fee.balance} $`;
+      }
+
+      // Send notification to parent
+      const parent = await Parent.findOne({ childrenIds: fee.studentId._id });
+      if (parent) {
+        await createNotification({
+          userId: parent.userId || parent._id,
+          title: `Rappel de Paiement - ${fee.feeDefinition.name}`,
+          message,
+          type: reminderType === 'OVERDUE' ? 'error' : 'warning',
+          priority,
+          metadata: {
+            studentFeeId: fee._id,
+            studentId: fee.studentId._id,
+            amount: fee.balance,
+            dueDate: fee.feeDefinition.dueDate,
+            reminderType
+          }
+        });
+      }
+
+      // Update last reminder date
+      await StudentFee.findByIdAndUpdate(fee._id, { lastReminderDate: new Date() });
+    }
+
+    console.log(`Processed ${allFeesToRemind.length} automatic reminders`);
+    return {
+      upcoming: upcomingFees.length,
+      overdue: overdueFees.length,
+      total: allFeesToRemind.length
+    };
+  } catch (error) {
+    console.error('Error in automatic reminders:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get fee reminders statistics for dashboard
+ */
+const getReminderStats = async (schoolId) => {
+  const today = new Date();
+  const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const stats = await StudentFee.aggregate([
+    {
+      $match: {
+        schoolId,
+        balance: { $gt: 0 }
+      }
+    },
+    {
+      $lookup: {
+        from: 'feedefinitions',
+        localField: 'feeDefinitionId',
+        foreignField: '_id',
+        as: 'feeDefinition'
+      }
+    },
+    {
+      $unwind: '$feeDefinition'
+    },
+    {
+      $group: {
+        _id: {
+          $cond: [
+            { $lt: ['$feeDefinition.dueDate', today] },
+            'overdue',
+            { $lte: ['$feeDefinition.dueDate', sevenDaysFromNow] },
+            'upcoming',
+            'future'
+          ]
+        },
+        count: { $sum: 1 },
+        totalAmount: { $sum: '$balance' }
+      }
+    }
+  ]);
+
+  return {
+    overdue: stats.find(s => s._id === 'overdue')?.count || 0,
+    upcoming: stats.find(s => s._id === 'upcoming')?.count || 0,
+    future: stats.find(s => s._id === 'future')?.count || 0,
+    totalOverdueAmount: stats.find(s => s._id === 'overdue')?.totalAmount || 0
+  };
+};
+
 module.exports = {
   createFeeDefinition,
   getStudentFees,
@@ -374,4 +553,6 @@ module.exports = {
   getMyChildrenFees,
   getClassFeeStatus,
   syncAllStudentFees,
+  sendAutomaticReminders,
+  getReminderStats,
 };

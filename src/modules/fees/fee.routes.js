@@ -45,6 +45,8 @@ router.post("/definitions", restrictTo("accountant", "superadmin"), feeControlle
 router.get("/status", restrictTo("admin", "accountant", "superadmin"), feeController.getAllFeeStatuses);
 router.post("/payments", restrictTo("accountant", "superadmin"), proofUpload.array('proofs', 5), feeController.recordPayment);
 router.post("/reminders/:studentFeeId", restrictTo("accountant", "superadmin"), feeController.sendReminder);
+router.get("/reminder-stats", restrictTo("admin", "accountant", "superadmin"), feeController.getReminderStats);
+router.post("/auto-reminders", restrictTo("superadmin"), feeController.triggerAutomaticReminders);
 
 // Routes spécifiques par rôle
 router.get("/me", feeController.getMyFees); // Student

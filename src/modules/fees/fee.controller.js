@@ -117,6 +117,35 @@ const getClassFeeStatus = async (req, res, next) => {
   }
 };
 
+/* =====================================================
+   GET REMINDER STATS
+===================================================== */
+const getReminderStats = async (req, res, next) => {
+  try {
+    const schoolId = req.user.school || req.user.schoolId;
+    const stats = await feeService.getReminderStats(schoolId);
+    res.status(200).json({ success: true, data: stats });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   SEND AUTOMATIC REMINDERS (CRON JOB)
+===================================================== */
+const triggerAutomaticReminders = async (req, res, next) => {
+  try {
+    const stats = await feeService.sendAutomaticReminders();
+    res.status(200).json({ 
+      success: true, 
+      message: 'Automatic reminders processed',
+      data: stats 
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createFeeDefinition,
   getStudentFees,
@@ -126,4 +155,6 @@ module.exports = {
   getMyFees,
   getMyChildrenFees,
   getClassFeeStatus,
+  getReminderStats,
+  triggerAutomaticReminders,
 };
