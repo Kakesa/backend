@@ -89,6 +89,11 @@ const userSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+
+    photo: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

@@ -4,6 +4,7 @@ const connectDB = require("./config/database");
 const initSuperAdmin = require("./config/initSuperAdmin");
 const cron = require('node-cron');
 const { runFeeReminderJob } = require('./jobs/feeReminderJob');
+const { createDefaultAvatar } = require('./modules/uploads/default-avatar');
 
 const PORT = process.env.PORT || 5000;
 
@@ -27,6 +28,9 @@ console.log('📅 Fee reminder job scheduled to run daily at 9:00 AM');
 
 connectDB().then(async () => {
   await initSuperAdmin();
+  
+  // Créer l'avatar par défaut s'il n'existe pas
+  createDefaultAvatar();
 
   app.listen(PORT, () => {
     console.log(`🚀 Serveur lancé sur le port ${PORT}`);

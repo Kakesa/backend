@@ -27,6 +27,7 @@ const feeRoutes = require('./modules/fees/fee.routes');
 const expenseRoutes = require('./modules/expenses/expense.routes');
 const financeRoutes = require('./modules/finance/finance.routes');
 const paymentRoutes = require('./modules/payments/payment.routes');
+const uploadRoutes = require('./modules/uploads/upload.routes');
 const { protect } = require('./middlewares/auth.middleware');
 const checkSubscription = require('./middlewares/checkSubscription.middleware');
 
@@ -62,4 +63,5 @@ module.exports = (app) => {
   app.use('/api/expenses', protect, checkSubscription, expenseRoutes);
   app.use('/api/finance', protect, checkSubscription, financeRoutes);
   app.use('/api/payments', paymentRoutes);
+  app.use('/api/uploads', uploadRoutes);
 };

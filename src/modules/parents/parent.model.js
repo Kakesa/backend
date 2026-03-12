@@ -50,6 +50,11 @@ const parentSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+
+    photo: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,
