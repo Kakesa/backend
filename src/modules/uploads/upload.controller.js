@@ -42,8 +42,14 @@ const getProfilePhoto = async (req, res) => {
     // Si l'utilisateur a une photo dans la base de données
     if (user.photo) {
       const photoPath = path.join(__dirname, '../uploads/profiles', user.photo);
+      console.log('Photo trouvée dans la base de données:', user.photo);
+      console.log('Chemin du fichier:', photoPath);
+      
       if (fs.existsSync(photoPath)) {
+        console.log('Envoi du fichier:', photoPath);
         return res.sendFile(photoPath);
+      } else {
+        console.log('Fichier non trouvé sur le disque');
       }
     }
     
@@ -77,6 +83,9 @@ const updateProfilePhoto = async (req, res) => {
         message: 'Aucun fichier fourni' 
       });
     }
+
+    console.log('Fichier reçu par Multer:', req.file);
+    console.log('Nom du fichier:', req.file.filename);
 
     let user;
 
