@@ -9,9 +9,9 @@ const { Parent } = require('../parents/parent.model');
 const getProfilePhoto = async (req, res) => {
   try {
     const { userId, userType } = req.params;
+    
+    // Chercher d'abord dans la base de données pour avoir le nom exact du fichier
     let user;
-
-    // Récupérer l'utilisateur selon le type
     switch (userType) {
       case 'user':
         user = await User.findById(userId);
@@ -39,32 +39,24 @@ const getProfilePhoto = async (req, res) => {
       });
     }
 
-    if (!user.photo) {
-      // Retourner une image par défaut si aucune photo n'est définie
-      const defaultImagePath = path.join(__dirname, '../uploads/default-avatar.png');
-      if (fs.existsSync(defaultImagePath)) {
-        return res.sendFile(defaultImagePath);
-      } else {
-        // Retourner une réponse vide si pas de photo par défaut
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Aucune photo de profil' 
-        });
+    // Si l'utilisateur a une photo dans la base de données
+    if (user.photo) {
+      const photoPath = path.join(__dirname, '../uploads/profiles', user.photo);
+      if (fs.existsSync(photoPath)) {
+        return res.sendFile(photoPath);
       }
     }
-
-    // Construire le chemin complet de la photo
-    const photoPath = path.join(__dirname, '../uploads/profiles', user.photo);
     
-    if (fs.existsSync(photoPath)) {
-      res.sendFile(photoPath);
+    // Sinon, servir l'avatar par défaut
+    const defaultImagePath = path.join(__dirname, '../uploads/default-avatar.svg');
+    if (fs.existsSync(defaultImagePath)) {
+      return res.sendFile(defaultImagePath);
     } else {
-      res.status(404).json({ 
+      return res.status(404).json({ 
         success: false, 
-        message: 'Fichier photo non trouvé' 
+        message: 'Photo non trouvée' 
       });
     }
-
   } catch (error) {
     console.error('Erreur lors de la récupération de la photo:', error);
     res.status(500).json({ 
