@@ -77,7 +77,7 @@ const getProfilePhoto = async (req, res) => {
 // Mettre à jour la photo de profil
 const updateProfilePhoto = async (req, res) => {
   try {
-    const { userId, userType } = req.params;
+    const { userType, userId } = req.params;
     
     if (!req.file) {
       return res.status(400).json({ 

@@ -48,7 +48,26 @@ const upload = multer({
 });
 
 // Middleware pour l'upload d'une seule photo de profil
-const uploadProfilePhoto = upload.single('photo');
+const uploadProfilePhoto = (req, res, next) => {
+  upload.single('photo')(req, res, (err) => {
+    if (err) {
+      console.error('Erreur Multer:', err);
+      return res.status(400).json({ 
+        success: false, 
+        message: err.message 
+      });
+    }
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Aucun fichier fourni' 
+      });
+    }
+    
+    next();
+  });
+};
 
 module.exports = {
   uploadProfilePhoto,
