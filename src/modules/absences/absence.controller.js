@@ -1,4 +1,7 @@
 const absenceService = require("./absence.service");
+const Teacher = require("../teachers/teacher.model");
+const Student = require("../students/student.model");
+const Class = require("../classes/class.model");
 
 /* =====================================================
    ABSENCE CONTROLLER
@@ -33,6 +36,70 @@ const createAbsence = async (req, res, next) => {
 const updateAbsence = async (req, res, next) => {
   try {
     const data = await absenceService.updateAbsence(req.params.id, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* =====================================================
+   TEACHER SPECIFIC CONTROLLERS
+===================================================== */
+const getTeacherClassesAbsences = async (req, res, next) => {
+  try {
+    const teacherId = req.user._id;
+    const data = await absenceService.getTeacherClassesAbsences(teacherId, req.query);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getClassAbsences = async (req, res, next) => {
+  try {
+    const { classId } = req.params;
+    const teacherId = req.user._id;
+    const data = await absenceService.getClassAbsences(classId, teacherId, req.query);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const markAbsence = async (req, res, next) => {
+  try {
+    const teacherId = req.user._id;
+    const data = await absenceService.markAbsence({ ...req.body, teacherId });
+    res.status(201).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateTeacherAbsence = async (req, res, next) => {
+  try {
+    const teacherId = req.user._id;
+    const data = await absenceService.updateTeacherAbsence(req.params.id, req.body, teacherId);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getPendingTeacherJustifications = async (req, res, next) => {
+  try {
+    const teacherId = req.user._id;
+    const data = await absenceService.getPendingTeacherJustifications(teacherId);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const reviewTeacherJustification = async (req, res, next) => {
+  try {
+    const teacherId = req.user._id;
+    const data = await absenceService.reviewTeacherJustification(req.params.id, { ...req.body, reviewedBy: teacherId });
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -110,6 +177,12 @@ module.exports = {
   getAbsenceByStudent,
   createAbsence,
   updateAbsence,
+  getTeacherClassesAbsences,
+  getClassAbsences,
+  markAbsence,
+  updateTeacherAbsence,
+  getPendingTeacherJustifications,
+  reviewTeacherJustification,
   getJustifications,
   getJustificationByStudent,
   getPendingJustifications,

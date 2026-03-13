@@ -51,7 +51,7 @@ module.exports = (app) => {
   app.use('/api/attendance', protect, checkSubscription, attendanceRoutes);
   app.use('/api/messages', protect, checkSubscription, messageRoutes);
   app.use('/api/notifications', protect, checkSubscription, notificationRoutes);
-  app.use('/api/absences', protect, checkSubscription, absenceRoutes);
+  app.use('/api/absences', protect, absenceRoutes);
   app.use('/api/assignments', protect, checkSubscription, assignmentRoutes);
   app.use('/api/evaluations', protect, checkSubscription, evaluationRoutes);
   app.use('/api/competences', protect, checkSubscription, competenceRoutes);
