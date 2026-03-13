@@ -12,6 +12,7 @@ router.get("/student/:studentId", gradeController.getGradesByStudent);
 router.get("/student/:studentId/average", gradeController.getStudentAverage);
 router.get("/student/:studentId/trimester/:trimester", gradeController.getGradesByStudent);
 router.get("/class/:classId/subject/:subjectId", gradeController.getGradesByClassAndSubject);
+router.get("/class/:classId", gradeController.getGradesByClass);
 
 router.post("/", gradeController.createGrade);
 router.post("/bulk", gradeController.bulkCreateGrades);

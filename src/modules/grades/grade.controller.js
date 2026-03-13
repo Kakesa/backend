@@ -31,6 +31,16 @@ const getGradesByClassAndSubject = async (req, res, next) => {
   }
 };
 
+const getGradesByClass = async (req, res, next) => {
+  try {
+    const { classId } = req.params;
+    const data = await gradeService.getGrades({ classId });
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const createGrade = async (req, res, next) => {
   try {
     // ensure coefficient (maxScore) defaults to 20 if not supplied
@@ -106,6 +116,7 @@ module.exports = {
   getGrades,
   getGradesByStudent,
   getGradesByClassAndSubject,
+  getGradesByClass,
   createGrade,
   bulkCreateGrades,
   updateGrade,
