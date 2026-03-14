@@ -30,7 +30,11 @@ connectDB().then(async () => {
   await initSuperAdmin();
   
   // Créer l'avatar par défaut s'il n'existe pas
-  createDefaultAvatar();
+  try {
+    createDefaultAvatar();
+  } catch (error) {
+    console.error('Erreur lors de la création de l\'avatar par défaut:', error);
+  }
 
   app.listen(PORT, () => {
     console.log(`🚀 Serveur lancé sur le port ${PORT}`);
