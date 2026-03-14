@@ -1,8 +1,26 @@
 const Event = require("./event.model");
 
 const createEvent = async (data) => {
-  const event = new Event(data);
-  return await event.save();
+  try {
+    const event = new Event(data);
+    return await event.save();
+  } catch (error) {
+    // Gérer les erreurs de validation
+    if (error.name === "ValidationError") {
+      throw error; // Laisser le contrôleur gérer cette erreur
+    }
+    
+    // Gérer les erreurs de doublon si nécessaire
+    if (error.code === 11000) {
+      throw {
+        statusCode: 409,
+        message: "Un événement similaire existe déjà",
+        error: "DUPLICATE_EVENT"
+      };
+    }
+    
+    throw error;
+  }
 };
 
 const getEvents = async (query = {}) => {

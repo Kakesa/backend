@@ -31,9 +31,48 @@ const getUpcomingEvents = async (req, res, next) => {
 
 const createEvent = async (req, res, next) => {
   try {
+    // Injecter l'ID de l'école depuis l'utilisateur connecté
+    if (req.user && req.user.school) {
+      req.body.schoolId = req.user.school;
+    }
+    
+    // Injecter l'ID du créateur
+    if (req.user && req.user._id) {
+      req.body.createdBy = req.user._id;
+    }
+    
+    // Valider et corriger le type si nécessaire
+    const validTypes = ["exam", "holiday", "meeting", "other", "event", "conference", "workshop", "competition", "celebration"];
+    if (req.body.type && !validTypes.includes(req.body.type)) {
+      req.body.type = "other"; // Valeur par défaut si invalide
+    }
+    
+    // S'assurer que les dates sont présentes
+    if (!req.body.start || !req.body.end) {
+      return res.status(400).json({
+        success: false,
+        message: "Les dates de début et de fin sont obligatoires",
+        error: "MISSING_DATES"
+      });
+    }
+    
     const data = await eventService.createEvent(req.body);
     res.status(201).json({ success: true, data });
   } catch (err) {
+    // Gérer spécifiquement les erreurs de validation Mongoose
+    if (err.name === "ValidationError") {
+      const validationErrors = Object.keys(err.errors).map(key => ({
+        field: key,
+        message: err.errors[key].message
+      }));
+      
+      return res.status(400).json({
+        success: false,
+        message: "Erreur de validation des données",
+        errors: validationErrors,
+        error: "VALIDATION_ERROR"
+      });
+    }
     next(err);
   }
 };
