@@ -129,7 +129,7 @@ const getJustificationByStudent = async (req, res, next) => {
 
 const getPendingJustifications = async (req, res, next) => {
   try {
-    const data = await absenceService.getJustifications({ status: "pending" });
+    const data = await absenceService.getPendingJustifications();
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);

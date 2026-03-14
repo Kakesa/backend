@@ -19,7 +19,14 @@ const getAbsences = async (query = {}) => {
   if (status) filter.status = status;
 
   return await Absence.find(filter)
-    .populate("studentId", "firstName lastName matricule")
+    .populate({
+      path: "studentId",
+      select: "firstName lastName matricule",
+      populate: {
+        path: "class",
+        select: "name"
+      }
+    })
     .populate("justificationId")
     .sort({ startDate: -1 })
     .lean();
@@ -234,6 +241,20 @@ const updateJustificationFile = async (id, data) => {
   );
 };
 
+const getPendingJustifications = async () => {
+  return await Justification.find({ status: "pending" })
+    .populate({
+      path: "studentId",
+      select: "firstName lastName matricule",
+      populate: {
+        path: "class",
+        select: "name"
+      }
+    })
+    .sort({ createdAt: -1 })
+    .lean();
+};
+
 module.exports = {
   createAbsence,
   getAbsences,
@@ -246,6 +267,7 @@ module.exports = {
   reviewTeacherJustification,
   createJustification,
   getJustifications,
+  getPendingJustifications,
   reviewJustification,
   updateJustificationFile,
 };
