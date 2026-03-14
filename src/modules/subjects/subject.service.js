@@ -4,8 +4,38 @@ const Subject = require("./subject.model");
    CREATE SUBJECT
 ===================================================== */
 const createSubject = async (data) => {
-  const subject = new Subject(data);
-  return await subject.save();
+  try {
+    const subject = new Subject(data);
+    return await subject.save();
+  } catch (error) {
+    // Gérer les erreurs de doublon
+    if (error.code === 11000 && error.keyPattern && error.keyPattern.code) {
+      const duplicateCode = error.keyValue.code;
+      const schoolId = error.keyValue.schoolId;
+      
+      // Générer un code alternatif
+      const baseCode = duplicateCode.replace(/-\d+$/, ''); // Enlever le suffixe numérique
+      let suggestedCode = `${baseCode}-1`;
+      let counter = 2;
+      
+      // Chercher un code disponible
+      while (await Subject.findOne({ code: suggestedCode, schoolId })) {
+        suggestedCode = `${baseCode}-${counter}`;
+        counter++;
+      }
+      
+      throw {
+        statusCode: 409,
+        message: `Le code "${duplicateCode}" existe déjà dans votre école.`,
+        suggestion: {
+          message: "Code suggéré :",
+          code: suggestedCode
+        },
+        type: "DUPLICATE_CODE"
+      };
+    }
+    throw error;
+  }
 };
 
 /* =====================================================

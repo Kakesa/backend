@@ -37,6 +37,15 @@ const createSubject = async (req, res, next) => {
     const data = await subjectService.createSubject(req.body);
     res.status(201).json({ success: true, data });
   } catch (err) {
+    // Gérer spécifiquement les erreurs de doublon de code
+    if (err.type === "DUPLICATE_CODE") {
+      return res.status(409).json({
+        success: false,
+        message: err.message,
+        suggestion: err.suggestion,
+        error: "DUPLICATE_CODE"
+      });
+    }
     next(err);
   }
 };
