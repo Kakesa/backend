@@ -120,6 +120,38 @@ router.get('/my-requests', protect, async (req, res) => {
   }
 });
 
+// GET - Récupérer les notifications d'aide pour l'utilisateur connecté
+router.get('/user/:userId', protect, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Vérifier que l'utilisateur ne peut voir que ses propres notifications
+    if (userId !== (req.user._id || req.user.id).toString() && req.user.role !== 'superadmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès non autorisé'
+      });
+    }
+
+    const requests = await HelpRequest.find({ 
+      userId: userId,
+      schoolId: req.user.schoolId || 'default-school'
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: requests
+    });
+
+  } catch (error) {
+    console.error('Erreur récupération notifications utilisateur:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la récupération des notifications'
+    });
+  }
+});
+
 // GET - Récupérer toutes les demandes (superadmin uniquement)
 router.get('/', protect, async (req, res) => {
   try {
@@ -232,8 +264,8 @@ router.put('/:id', protect, async (req, res) => {
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; text-align: center;">
-                <h1 style="margin: 0; font-size: 24px;">🎓 ACADEX</h1>
-                <p style="margin: 10px 0; font-size: 16px;">Centre d'Aide</p>
+                <h1 style="margin: 0; font-size:24px;">🎓 ACADEX</h1>
+                <p style="margin: 10px 0; font-size:16px;">Centre d'Aide</p>
               </div>
               
               <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
@@ -285,6 +317,74 @@ router.put('/:id', protect, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erreur serveur lors de la mise à jour'
+    });
+  }
+});
+
+// PUT - Marquer une demande comme lue par l'utilisateur
+router.put('/:id/mark-read', protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const helpRequest = await HelpRequest.findOneAndUpdate(
+      { 
+        id, 
+        userId: req.user._id || req.user.id,
+        schoolId: req.user.schoolId || 'default-school'
+      },
+      { 
+        readByUser: true,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!helpRequest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Demande non trouvée'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Demande marquée comme lue',
+      data: helpRequest
+    });
+
+  } catch (error) {
+    console.error('Erreur marquer comme lu:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors du marquage comme lu'
+    });
+  }
+});
+
+// PUT - Marquer toutes les demandes de l'utilisateur comme lues
+router.put('/mark-all-read', protect, async (req, res) => {
+  try {
+    await HelpRequest.updateMany(
+      { 
+        userId: req.user._id || req.user.id,
+        schoolId: req.user.schoolId || 'default-school'
+      },
+      { 
+        readByUser: true,
+        updatedAt: new Date()
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Toutes les demandes marquées comme lues'
+    });
+
+  } catch (error) {
+    console.error('Erreur marquer tout comme lu:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors du marquage comme lu'
     });
   }
 });
