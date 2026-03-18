@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const HelpRequest = require('../../models/HelpRequest');
 const { protect } = require('../../middlewares/auth.middleware');
+const restrictTo = require('../../middlewares/role.middleware');
 const { sendEmail } = require('../../utils/emailService');
 
 // POST - Créer une nouvelle demande d'aide
@@ -362,7 +363,9 @@ router.put('/:id/mark-read', protect, async (req, res) => {
 });
 
 // PUT - Marquer toutes les demandes de l'utilisateur comme lues
-router.put('/mark-all-read', protect, async (req, res) => {
+router.put('/mark-all-read', protect, restrictTo(['admin', 'teacher', 'student', 'parent']), async (req, res) => {
+  console.log('🔍 DEBUG - mark-all-read route - User role:', req.user?.role);
+  console.log('🔍 DEBUG - mark-all-read route - User ID:', req.user?._id);
   try {
     await HelpRequest.updateMany(
       { 
