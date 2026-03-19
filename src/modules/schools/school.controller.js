@@ -178,6 +178,57 @@ const getSchoolSubscription = async (req, res, next) => {
   }
 };
 
+/* =====================================================
+   UPDATE TERM SYSTEM
+===================================================== */
+const updateTermSystem = async (req, res, next) => {
+  try {
+    if (!req.user.school) {
+      return res.status(404).json({ success: false, message: "Aucune école rattachée" });
+    }
+
+    const { termSystem } = req.body;
+    
+    if (!termSystem || !['trimester', 'semester'].includes(termSystem)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Système de termes invalide. Valeurs acceptées: trimester, semester" 
+      });
+    }
+
+    // Mettre à jour le système de termes
+    const school = await School.findByIdAndUpdate(
+      req.user.school,
+      { 
+        $set: { 
+          'settings.termSystem': termSystem,
+          'settings.trimesters': termSystem === 'trimester' ? 3 : 2
+        }
+      },
+      { new: true }
+    );
+
+    if (!school) {
+      return res.status(404).json({ success: false, message: "École introuvable" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        termSystem: school.settings.termSystem,
+        trimesters: school.settings.trimesters,
+        message: `Système mis à jour: ${termSystem === 'trimester' ? '3 trimestres' : '2 semestres'}`
+      }
+    });
+  } catch (err) {
+    console.error('Erreur mise à jour système de termes:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Erreur lors de la mise à jour du système de termes" 
+    });
+  }
+};
+
 module.exports = {
   createSchool,
   getAllSchools,
@@ -189,4 +240,5 @@ module.exports = {
   regenerateSchoolCode,
   getJoinedUsers,
   getSchoolSubscription,
+  updateTermSystem,
 };

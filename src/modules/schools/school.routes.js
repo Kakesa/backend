@@ -84,6 +84,13 @@ router.post(
   schoolController.regenerateSchoolCode
 );
 
+// PUT /api/schools/current/term-system
+router.put(
+  '/current/term-system',
+  restrictTo('superadmin', 'admin'),
+  schoolController.updateTermSystem
+);
+
 // GET /api/schools
 router.get(
   '/',

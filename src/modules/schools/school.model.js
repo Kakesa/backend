@@ -119,6 +119,40 @@ const schoolSchema = new mongoose.Schema(
     },
 
     /* ================================
+       SCHOOL SETTINGS
+    ================================ */
+    settings: {
+      gradeScale: {
+        type: Number,
+        default: 20,
+        enum: [20, 100],
+      },
+      trimesters: {
+        type: Number,
+        default: 3,
+        enum: [2, 3],
+      },
+      termSystem: {
+        type: String,
+        default: 'trimester',
+        enum: ['trimester', 'semester'],
+      },
+      language: {
+        type: String,
+        default: 'fr',
+        enum: ['fr', 'en'],
+      },
+      currency: {
+        type: String,
+        default: 'XOF',
+      },
+      timezone: {
+        type: String,
+        default: 'Africa/Kinshasa',
+      },
+    },
+
+    /* ================================
        OWNERSHIP & RELATIONS
     ================================ */
     createdBy: {
