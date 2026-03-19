@@ -5,6 +5,7 @@ const classService = require("./class.service");
 ===================================================== */
 const getAllClasses = async (req, res, next) => {
   try {
+    // Le schoolId est ajouté automatiquement par le middleware schoolFilter
     const data = await classService.getAllClasses(req.query);
     res.status(200).json({ success: true, data });
   } catch (err) {
@@ -18,6 +19,18 @@ const getAllClasses = async (req, res, next) => {
 const getClassById = async (req, res, next) => {
   try {
     const data = await classService.getClassById(req.params.id);
+    
+    // Vérification manuelle de l'appartenance à l'école
+    if (req.user && req.user.role !== 'superadmin' && data) {
+      const entitySchoolId = data.schoolId || data.school;
+      if (entitySchoolId && entitySchoolId.toString() !== req.user.school.toString()) {
+        return res.status(403).json({
+          message: 'Accès non autorisé: cette ressource n\'appartient pas à votre établissement',
+          error: 'Entity belongs to different school'
+        });
+      }
+    }
+    
     res.status(200).json({ success: true, data });
   } catch (err) {
     next(err);

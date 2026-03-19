@@ -2,9 +2,11 @@ const express = require("express");
 const router = express.Router();
 const courseController = require("./course.controller");
 const { protect } = require("../../middlewares/auth.middleware");
+const schoolFilter = require("../../middlewares/schoolFilter.middleware");
 
 // Protections
 router.use(protect);
+router.use(schoolFilter); // Ajout du filtre par école
 
 router.get("/", courseController.getAllCourses);
 router.get("/teacher/:teacherId", courseController.getTeacherCourses);
