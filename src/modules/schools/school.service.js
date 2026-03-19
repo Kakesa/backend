@@ -32,6 +32,15 @@ const createSchool = async (data, file) => {
     logo: logoPath,
     users: [adminId],
     createdBy: adminId,
+    // Initialiser les settings avec le termSystem
+    settings: {
+      gradeScale: data.settings?.gradeScale || 20,
+      trimesters: data.termSystem === 'semester' ? 2 : 3,
+      termSystem: data.termSystem || 'trimester',
+      language: data.settings?.language || 'fr',
+      currency: data.settings?.currency || 'XOF',
+      timezone: data.settings?.timezone || 'Africa/Kinshasa',
+    }
   });
 
   // Initialize 30-day trial
