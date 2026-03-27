@@ -79,6 +79,12 @@ app.post('/api/test-upload', upload.single('logo'), (req, res) => {
 // 🔹 Routes principales
 routes(app); // si tu veux utiliser multer dans tes routes
 
+// 🔹 Servir le frontend
+app.use(express.static(path.join(__dirname, '../../sushi/dist')));
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../../sushi/dist/index.html'));
+});
+
 // 🔹 Middleware de gestion des erreurs
 app.use(errorHandler);
 
