@@ -1,0 +1,47 @@
+const express = require('express');
+const router = express.Router();
+
+const {
+  register,
+  activateAccountWithOTP,
+  resendOTP,
+  login,
+  createSchool,
+  joinSchoolWithCode,
+  getAllUsers,
+  updatePermissions,
+  deleteUser,
+  getMe,
+  registerStudent,
+  changePassword,
+  getStudentEmail,
+} = require('./auth.controller');
+
+const { registerValidation, loginValidation } = require('./auth.validation');
+const { validate } = require('../../middlewares/validate.middleware');
+const { protect } = require('../../middlewares/auth.middleware');
+const restrictTo = require('../../middlewares/role.middleware'); // export direct
+const { checkPermission } = require('../../middlewares/permission.middleware');
+
+// -------------------------
+// AUTH
+// -------------------------
+router.post('/register', registerValidation, validate, register);
+router.post('/register-student', registerStudent);
+router.post('/login', loginValidation, validate, login);
+router.post('/activate-otp', activateAccountWithOTP);
+router.post('/resend-otp', resendOTP);
+router.post('/change-password', protect, changePassword);
+router.post('/get-student-email', getStudentEmail); // Public endpoint pour récupérer l'email d'un élève
+router.get('/me', protect, getMe);
+
+// -------------------------
+// SCHOOL
+// -------------------------
+router.post('/schools', protect, restrictTo('superadmin', 'admin'), createSchool);
+router.post('/schools/join', protect, joinSchoolWithCode);
+
+// NOTE: Les routes /api/auth/users sont obsolètes. 
+// Utilisez /api/users à la place.
+
+module.exports = router;
