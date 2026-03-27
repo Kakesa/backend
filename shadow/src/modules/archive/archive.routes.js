@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const archiveController = require('../archive/archive.controller');
+const archiveController = require('./archive.controller');
 const { protect } = require('../../middlewares/auth.middleware');
 const restrictTo = require('../../middlewares/role.middleware');
 
