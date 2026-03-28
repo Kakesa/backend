@@ -5,8 +5,11 @@ import subprocess
 import tempfile
 import pty
 import time
+import urllib.parse
 from flask import Flask, request, jsonify, render_template_string, session, redirect, url_for
 import dotenv
+
+from deployer import deploy
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24))
@@ -220,32 +223,6 @@ def verify_signature(payload_body, signature_header):
     expected_signature = "sha256=" + hash_object.hexdigest()
     
     return hmac.compare_digest(expected_signature, signature_header)
-
-def deploy(repo_url):
-    print(f"Deploying using {ORCHESTRATOR} from temp clone of {repo_url}...")
-    try:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            print(f"Cloning branch 'release' into {temp_dir}...")
-            subprocess.run(["git", "clone", "-b", "release", "--single-branch", repo_url, temp_dir], check=True)
-            
-            if ORCHESTRATOR == "kubernetes":
-                subprocess.run(["docker", "build", "-t", "acadex-shadow:latest", "."], cwd=temp_dir, check=True)
-                subprocess.run(["kubectl", "apply", "-f", "k8s.yaml"], cwd=temp_dir, check=True)
-                subprocess.run(["kubectl", "rollout", "restart", "deployment/shadow"], cwd=temp_dir, check=True)
-                print("Successfully rolled out kubernetes deployment.")
-                
-            elif ORCHESTRATOR == "docker-compose":
-                subprocess.run(["docker", "compose", "-p", "acadex", "up", "-d", "--build"], cwd=temp_dir, check=True)
-                print("Successfully updated docker-compose services.")
-                
-            else:
-                print(f"Unknown orchestrator: {ORCHESTRATOR}")
-                return False
-                
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"Deployment failed: {e}")
-        return False
 
 @app.route('/webhook', methods=['POST'])
 def webhook():

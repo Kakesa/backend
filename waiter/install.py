@@ -11,6 +11,18 @@ REQUIRED_ENV_VARS = [
     "JWT_SECRET"             # Needed by Shadow for authentication tokens
 ]
 
+def check_env_vars():
+    missing_vars = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
+    
+    git_auth_method = os.getenv("GIT_AUTH_METHOD", "https").lower()
+    if git_auth_method == "https":
+        if not os.getenv("GITHUB_USER"):
+            missing_vars.append("GITHUB_USER")
+        if not os.getenv("GITHUB_PASSWORD"):
+            missing_vars.append("GITHUB_PASSWORD")
+
+    return missing_vars
+
 def install_ngrok():
     print("Installing URL tunnel tool: ngrok...")
     try:
@@ -55,14 +67,17 @@ def main():
         os.environ["ACADEX_REPO_URL"] = sys.argv[1]
         
     # Check for missing required variables
-    missing_vars = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
+    missing_vars = check_env_vars()
     
     if missing_vars:
         print("Error: Installation failed. The following required environment variables are missing:")
         for var in missing_vars:
             print(f"  - {var}")
         print("\nPlease set them before running the script. Example:")
-        print("export ACADEX_REPO_URL='https://github.com/.../repo.git'")
+        print("export ACADEX_REPO_URL='https://github.com/user/repo'")
+        print("export GIT_AUTH_METHOD='https' # or 'ssh'")
+        print("export GITHUB_USER='your_github_username'")
+        print("export GITHUB_PASSWORD='your_github_token_or_password'")
         print("export ACADEX_ORCHESTRATOR='kubernetes'")
         print("export GITHUB_SECRET='your_secure_random_string'")
         print("export JWT_SECRET='your_secure_jwt_secret'")
@@ -76,7 +91,8 @@ def main():
     # Move acadex script to a system path
     print("Installing the 'acadex' CLI to /usr/local/bin...")
     try:
-        subprocess.run(["sudo", "cp", "scripts/acadex", "/usr/local/bin/acadex"], check=True)
+        acadex_cli_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts", "acadex"))
+        subprocess.run(["sudo", "cp", acadex_cli_path, "/usr/local/bin/acadex"], check=True)
         subprocess.run(["sudo", "chmod", "+x", "/usr/local/bin/acadex"], check=True)
         print("'acadex' CLI installed globally. You can now type 'acadex' from anywhere.")
     except Exception as e:

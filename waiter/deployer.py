@@ -1,15 +1,42 @@
 import os
 import subprocess
 import tempfile
+import urllib.parse
+import re
 
 ORCHESTRATOR = os.getenv("ACADEX_ORCHESTRATOR", "docker-compose").lower()
 
+def get_authenticated_repo_url(repo_url):
+    git_auth_method = os.getenv("GIT_AUTH_METHOD", "https").lower()
+    github_user = os.getenv("GITHUB_USER", "")
+    github_pass = os.getenv("GITHUB_PASSWORD", "")
+    
+    if git_auth_method == "ssh":
+        # Convert HTTPS URL to SSH URL
+        if repo_url.startswith("https://github.com/"):
+            repo_url = repo_url.replace("https://github.com/", "git@github.com:")
+            if not repo_url.endswith(".git"):
+                repo_url += ".git"
+        return repo_url
+        
+    elif git_auth_method == "https":
+        if github_user and github_pass and repo_url.startswith("https://"):
+            parsed = urllib.parse.urlparse(repo_url)
+            # Reconstruct with auth
+            return f"https://{urllib.parse.quote(github_user)}:{urllib.parse.quote(github_pass)}@{parsed.netloc}{parsed.path}"
+    
+    return repo_url
+
 def deploy(repo_url, branch="release"):
+    auth_repo_url = get_authenticated_repo_url(repo_url)
+
+    # Do not print auth_repo_url to keep credentials out of logs
     print(f"Deploying using {ORCHESTRATOR} from temp clone of {repo_url}...")
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             print(f"Cloning branch '{branch}' into {temp_dir}...")
-            subprocess.run(["git", "clone", "-b", branch, "--single-branch", repo_url, temp_dir], check=True)
+            # We use auth_repo_url but don't print it to keep secrets safe
+            subprocess.run(["git", "clone", "-b", branch, "--single-branch", auth_repo_url, temp_dir], check=True)
             
             if ORCHESTRATOR == "kubernetes":
                 # Build the image locally
