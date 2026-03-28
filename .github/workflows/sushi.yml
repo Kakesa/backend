@@ -1,0 +1,35 @@
+name: Sushi CI
+
+on:
+  push:
+    branches: [ "main", "release" ]
+    paths:
+      - 'sushi/**'
+      - '.github/workflows/sushi.yml'
+  pull_request:
+    branches: [ "main", "release" ]
+    paths:
+      - 'sushi/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./sushi
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      run: bun install
+
+    - name: TS Check and Build
+      run: |
+        bun run build

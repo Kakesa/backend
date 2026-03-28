@@ -1,0 +1,86 @@
+/* Variables CSS personnalisées ACADEX */
+:root {
+  --acadex-primary: #388bcf;
+  --acadex-primary-light: #5ba3e6;
+  --acadex-primary-dark: #2b7bb8;
+  --acadex-primary-darker: #1e5d8a;
+  
+  --acadex-gradient: linear-gradient(135deg, #388bcf, #2b7bb8);
+  --acadex-gradient-light: linear-gradient(135deg, #5ba3e6, #388bcf);
+  --acadex-gradient-dark: linear-gradient(135deg, #2b7bb8, #1e5d8a);
+}
+
+/* Classes utilitaires personnalisées */
+.acadex-primary {
+  background-color: var(--acadex-primary) !important;
+}
+
+.acadex-primary-text {
+  color: var(--acadex-primary) !important;
+}
+
+.acadex-gradient {
+  background: var(--acadex-gradient) !important;
+}
+
+.acadex-gradient-light {
+  background: var(--acadex-gradient-light) !important;
+}
+
+.acadex-gradient-dark {
+  background: var(--acadex-gradient-dark) !important;
+}
+
+/* Animation fade-in-up */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out;
+}
+
+/* Surcharge des couleurs Tailwind pour ACADEX */
+.bg-blue-500 {
+  background-color: var(--acadex-primary) !important;
+}
+
+.bg-blue-600 {
+  background-color: var(--acadex-primary-dark) !important;
+}
+
+.from-blue-500 {
+  --tw-gradient-from: var(--acadex-primary) !important;
+}
+
+.to-blue-700 {
+  --tw-gradient-to: var(--acadex-primary-darker) !important;
+}
+
+.text-blue-600 {
+  color: var(--acadex-primary) !important;
+}
+
+.border-blue-500 {
+  border-color: var(--acadex-primary) !important;
+}
+
+/* Hover effects avec couleur ACADEX */
+.hover\:bg-blue-600:hover {
+  background-color: var(--acadex-primary-dark) !important;
+}
+
+.hover\:text-blue-600:hover {
+  color: var(--acadex-primary) !important;
+}
+
+.hover\:border-blue-500:hover {
+  border-color: var(--acadex-primary) !important;
+}
