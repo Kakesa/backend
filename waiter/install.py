@@ -30,8 +30,25 @@ def install_ngrok():
     except subprocess.CalledProcessError:
         print("Warning: failed to automatically fetch ngrok. You may need to manually install it.")
 
+def run_bootstrap():
+    print("Running system bootstrap script...")
+    bootstrap_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts", "bootstrap.sh"))
+    if os.path.exists(bootstrap_path):
+        try:
+            # We run it using sudo because it requires root permissions to install packages
+            subprocess.run(["sudo", "bash", bootstrap_path], check=True)
+            print("System bootstrap completed successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error: Bootstrap script failed with exit code: {e.returncode}")
+            sys.exit(1)
+    else:
+        print(f"Warning: Bootstrap script not found at {bootstrap_path}")
+
 def main():
     print("Starting one-time installation for Acadex...")
+    
+    # Run the bootstrap script first
+    run_bootstrap()
     
     # Allow mapping the argv to the env var for ease of use
     if len(sys.argv) > 1 and not os.getenv("ACADEX_REPO_URL"):
