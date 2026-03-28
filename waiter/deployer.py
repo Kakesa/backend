@@ -2,7 +2,6 @@ import os
 import subprocess
 import tempfile
 import urllib.parse
-import re
 
 ORCHESTRATOR = os.getenv("ACADEX_ORCHESTRATOR", "docker-compose").lower()
 
@@ -48,6 +47,8 @@ def deploy(repo_url, branch="release"):
             if ORCHESTRATOR == "kubernetes":
                 # Build the image locally
                 subprocess.run(["docker", "build", "-t", "acadex-shadow:latest", "."], cwd=temp_dir, check=True)
+                # Ensure minikube can access the locally built image.
+                subprocess.run(["minikube", "image", "load", "acadex-shadow:latest"], check=True)
                 
                 # Apply k8s manifests just in case they changed, then restart
                 subprocess.run(["kubectl", "apply", "-f", "/var/acadex/k8s.yaml"], cwd=temp_dir, check=True)

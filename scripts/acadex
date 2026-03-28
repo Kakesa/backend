@@ -3,6 +3,10 @@ import sys
 import os
 import subprocess
 import tempfile
+import time
+
+WAITER_DIR = "/opt/acadex/waiter"
+WAITER_LOG = "/tmp/acadex-waiter.log"
 
 def get_orchestrator():
     """Retrieve the orchestrator from environment or fall back to docker-compose."""
@@ -33,7 +37,7 @@ def kill():
         
     print("Stopping Waiter daemon...")
     try:
-        subprocess.run(["pkill", "-f", "gunicorn.*webhook:app"])
+        subprocess.run(["pkill", "-f", "webhook:app"])
         print("Waiter stopped.")
     except Exception:
         print("Waiter was not running.")
@@ -52,13 +56,28 @@ def start():
         sys.exit(1)
         
     print("Starting Waiter Webhook listener locally (daemon mode)...")
+    if not os.path.exists(WAITER_DIR):
+        print(f"Waiter install directory not found: {WAITER_DIR}")
+        print("Re-run installer: python3 waiter/install.py")
+        sys.exit(1)
+
     try:
+        subprocess.run(["pkill", "-f", "webhook:app"], check=False)
         # Start gunicorn in the background using Waiter's configuration
-        cmd = "cd /opt/acadex/waiter && nohup gunicorn --bind 0.0.0.0:${PORT:-5050} webhook:app > /dev/null 2>&1 &"
+        cmd = f"cd {WAITER_DIR} && nohup python3 -m gunicorn --bind 0.0.0.0:${{PORT:-5050}} webhook:app > {WAITER_LOG} 2>&1 &"
         subprocess.run(cmd, executable='/bin/bash', shell=True, check=True)
-        print("Waiter started successfully.")
+        time.sleep(1)
+        check = subprocess.run(["pgrep", "-f", "webhook:app"], check=False, capture_output=True, text=True)
+        if check.returncode == 0 and check.stdout.strip():
+            print("Waiter started successfully.")
+        else:
+            print("Waiter failed to start. Recent logs:")
+            subprocess.run(["tail", "-n", "40", WAITER_LOG], check=False)
+            sys.exit(1)
     except Exception as e:
         print(f"Failed to start waiter: {e}")
+        subprocess.run(["tail", "-n", "40", WAITER_LOG], check=False)
+        sys.exit(1)
 
 def tunnel():
     """Launches ngrok to expose both shadow and waiter endpoints securely."""
@@ -99,7 +118,16 @@ def status():
     if orch == "docker-compose":
         subprocess.run(["docker", "compose", "-p", "acadex", "-f", "/var/acadex/docker-compose.yml", "ps"])
     elif orch == "kubernetes":
-        subprocess.run(["kubectl", "get", "deployments,pods,services"])
+        subprocess.run(["kubectl", "get", "deployments,pods,services"], check=False)
+        err_check = subprocess.run(
+            ["kubectl", "get", "pods", "-o", "wide"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if "ErrImagePull" in err_check.stdout or "ImagePullBackOff" in err_check.stdout:
+            print("\nDetected image pull issue for one or more pods.")
+            print("Run: minikube image load acadex-shadow:latest && kubectl rollout restart deployment/shadow")
     else:
         print(f"Unknown orchestrator: {orch}")
         
@@ -107,13 +135,16 @@ def status():
     print(" Waiter Daemon Status")
     print("==========================================")
     try:
-        waiter_pids = subprocess.check_output(["pgrep", "-f", "gunicorn.*webhook:app"]).decode().strip().split('\n')
+        waiter_pids = subprocess.check_output(["pgrep", "-f", "webhook:app"]).decode().strip().split('\n')
         if waiter_pids and waiter_pids[0]:
             print(f"✅ Waiter is RUNNING (PIDs: {', '.join(waiter_pids)})")
         else:
             print("❌ Waiter is STOPPED")
     except subprocess.CalledProcessError:
         print("❌ Waiter is STOPPED")
+        if os.path.exists(WAITER_LOG):
+            print(f"Last waiter log lines ({WAITER_LOG}):")
+            subprocess.run(["tail", "-n", "20", WAITER_LOG], check=False)
 
     print("\n==========================================")
     print(" Tunnel Status (ngrok)")
@@ -143,7 +174,7 @@ def uninstall():
         subprocess.run(["kubectl", "delete", "-f", "/var/acadex/k8s.yaml"], check=False)
         
     print("Stopping Waiter daemon...")
-    subprocess.run(["pkill", "-f", "gunicorn.*webhook:app"], check=False)
+    subprocess.run(["pkill", "-f", "webhook:app"], check=False)
 
     print("Removing /var/acadex configuration files...")
     subprocess.run(["sudo", "rm", "-rf", "/var/acadex"])
