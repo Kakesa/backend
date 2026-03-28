@@ -36,7 +36,9 @@ connectDB().then(async () => {
     console.error('Erreur lors de la création de l\'avatar par défaut:', error);
   }
 
-  app.listen(PORT, () => {
-    console.log(`🚀 Serveur lancé sur le port ${PORT}`);
+  const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+  
+  app.listen(PORT, HOST, () => {
+    console.log(`🚀 Serveur lancé sur http://${HOST}:${PORT}`);
   });
 });

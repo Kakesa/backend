@@ -6,10 +6,11 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "${SHADOW_PORT:-5000}:${SHADOW_PORT:-5000}"
     environment:
       - NODE_ENV=production
       - MONGO_URI=mongodb://mongodb:27017/acadex
+      - PORT=${SHADOW_PORT:-5000}
     depends_on:
       - mongodb
 
