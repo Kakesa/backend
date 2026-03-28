@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+import sys
+import os
+import subprocess
+import tempfile
+
+def get_orchestrator():
+    """Retrieve the orchestrator from environment or fall back to docker-compose."""
+    return os.getenv("ACADEX_ORCHESTRATOR", "docker-compose").lower()
+
+def confirm(prompt):
+    """Prompt the user for a Yes/No confirmation."""
+    resp = input(f"{prompt} [y/N]: ").strip().lower()
+    return resp in ('y', 'yes')
+
+def kill():
+    """Stops all application containers/resources."""
+    if not confirm("Are you sure you want to stop all Acadex containers?"):
+        print("Aborted.")
+        sys.exit(0)
+    
+    orch = get_orchestrator()
+    print(f"Stopping containers using {orch}...")
+    
+    if orch == "docker-compose":
+        subprocess.run(["docker", "compose", "down"])
+    elif orch == "kubernetes":
+        # Simplified removal
+        subprocess.run(["kubectl", "delete", "-f", "k8s.yaml"])
+    else:
+        print(f"Unknown orchestrator: {orch}")
+        sys.exit(1)
+
+def start():
+    """Starts the application containers."""
+    orch = get_orchestrator()
+    print(f"Starting containers using {orch}...")
+    
+    if orch == "docker-compose":
+        subprocess.run(["docker", "compose", "up", "-d"])
+    elif orch == "kubernetes":
+        subprocess.run(["kubectl", "apply", "-f", "k8s.yaml"])
+    else:
+        print(f"Unknown orchestrator: {orch}")
+        sys.exit(1)
+
+def tunnel():
+    """Launches ngrok to expose both shadow and waiter endpoints securely."""
+    shadow_port = os.getenv("SHADOW_PORT", "5000")
+    waiter_port = os.getenv("WAITER_PORT", "5050")
+    
+    print(f"Starting ngrok tunnels for Shadow ({shadow_port}) and Waiter ({waiter_port})...")
+    config = f"""
+version: "2"
+tunnels:
+  shadow:
+    proto: http
+    addr: {shadow_port}
+  waiter:
+    proto: http
+    addr: {waiter_port}
+"""
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix=".yml") as f:
+        f.write(config)
+        config_path = f.name
+    
+    try:
+        # ngrok start --all requires the yaml configuration
+        subprocess.run(["ngrok", "start", "--all", "--config", config_path])
+    except FileNotFoundError:
+        print("Error: ngrok is not installed or not in your PATH.")
+        print("Please run the one-time waiter/install.py script to install it, or install it manually.")
+    finally:
+        os.remove(config_path)
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: scripts/acadex <command>")
+        print("\nCommands:")
+        print("  start  - Starts all containers using the defined orchestrator")
+        print("  kill   - Stops all containers (requires confirmation)")
+        print("  tunnel - Launches ngrok to tunnel shadow and waiter")
+        sys.exit(1)
+        
+    cmd = sys.argv[1].lower()
+    
+    if cmd == "start":
+        start()
+    elif cmd == "kill":
+        kill()
+    elif cmd == "tunnel":
+        tunnel()
+    else:
+        print(f"Unknown command: {cmd}")
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()

@@ -1,5 +1,6 @@
 import sys
 import os
+import subprocess
 from deployer import deploy
 
 # Base environment variables fundamentally required by Waiter & Shadow
@@ -9,6 +10,25 @@ REQUIRED_ENV_VARS = [
     "GITHUB_SECRET",         # Needed to securely verify GitHub webhooks
     "JWT_SECRET"             # Needed by Shadow for authentication tokens
 ]
+
+def install_ngrok():
+    print("Installing URL tunnel tool: ngrok...")
+    try:
+        # Standard silent install of ngrok (fallbacks to ~/.local/bin if not root)
+        cmd = '''
+        if ! command -v ngrok &> /dev/null; then
+            echo "ngrok not found, downloading..."
+            mkdir -p ~/.local/bin
+            wget -qO- https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz | tar xvz -C ~/.local/bin || \
+            wget -qO- https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz | sudo tar xvz -C /usr/local/bin
+            echo "Installed ngrok successfully."
+        else
+            echo "ngrok is already installed."
+        fi
+        '''
+        subprocess.run(cmd, executable='/bin/bash', shell=True, check=True)
+    except subprocess.CalledProcessError:
+        print("Warning: failed to automatically fetch ngrok. You may need to manually install it.")
 
 def main():
     print("Starting one-time installation for Acadex...")
@@ -34,8 +54,20 @@ def main():
     repo_url = os.getenv("ACADEX_REPO_URL")
     
     success = deploy(repo_url)
+    install_ngrok()
+
     if success:
-        print("\nInstallation complete! The initial application setup is done.")
+        print("\n" + "="*60)
+        print("🎉 Installation complete! The Acadex suite is now running.")
+        print("="*60)
+        print("\n🚨 ACTION REQUIRED: Configure ngrok manually using your auth token.")
+        print("Run the following command to link your account:")
+        print("   ngrok config add-authtoken <YOUR_NGROK_TOKEN>")
+        print("\nOnce configured, you can expose your applications by navigating to the repo and running:")
+        print("   ./scripts/acadex tunnel")
+        print("\nOther available commands:")
+        print("   ./scripts/acadex kill   # Stops all services securely")
+        print("   ./scripts/acadex start  # Boots all services back up")
         sys.exit(0)
     else:
         print("\nInstallation failed. Please review the error logs above.")

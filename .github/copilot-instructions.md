@@ -7,6 +7,8 @@
 
 ## Architecture & State
 - **Monorepo Structure**: 
+  - `waiter/`: Python-based GitHub webhook listener and deployment automation server (port 5050).
+  - `scripts/`: Holds internal utility scripts like `acadex` used for local operations.
   - `shadow/`: Multi-tenant Node.js backend (port 5000) using Express + Mongoose.
   - `sushi/`: React 18/Vite/TypeScript frontend (port 8080) separated by role-based routing (e.g., student, teacher, admin).
 - **Frontend State**: Utilize **Context** for auth/theme, and **React Query** for server state. **Do not use Redux.**
