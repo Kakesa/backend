@@ -1,4 +1,9 @@
 # Acadex (EduGest)
+
+[![Shadow CI](https://github.com/Kakesa/backend/actions/workflows/shadow.yml/badge.svg)](https://github.com/Kakesa/backend/actions/workflows/shadow.yml)
+[![Sushi CI](https://github.com/Kakesa/backend/actions/workflows/sushi.yml/badge.svg)](https://github.com/Kakesa/backend/actions/workflows/sushi.yml)
+[![Waiter CI](https://github.com/Kakesa/backend/actions/workflows/waiter.yml/badge.svg)](https://github.com/Kakesa/backend/actions/workflows/waiter.yml)
+
 Welcome to the Acadex repository. This monorepo contains the entire suite for the Acadex educational management system. 
 
 ## 🏗️ Architecture Overview
