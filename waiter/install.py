@@ -98,6 +98,16 @@ def main():
     except Exception as e:
         print(f"Warning: Failed to install 'acadex' globally, you might need to run the installer with sudo, or copy it manually. Error: {e}")
 
+    # Move Waiter script block to /opt/acadex/waiter
+    print("Installing Waiter daemon to /opt/acadex/waiter...")
+    try:
+        waiter_dir = os.path.abspath(os.path.dirname(__file__))
+        subprocess.run(["sudo", "mkdir", "-p", "/opt/acadex"], check=True)
+        subprocess.run(["sudo", "cp", "-r", waiter_dir, "/opt/acadex/"], check=True)
+        print("Waiter daemon installed to /opt/acadex/waiter successfully.")
+    except Exception as e:
+        print(f"Warning: Failed to copy Waiter to /opt/acadex/waiter, ensure you have permissions. Error: {e}")
+
     if success:
         print("\n" + "="*60)
         print("🎉 Installation complete! The Acadex suite is now running.")

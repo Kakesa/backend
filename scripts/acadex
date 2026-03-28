@@ -54,7 +54,7 @@ def start():
     print("Starting Waiter Webhook listener locally (daemon mode)...")
     try:
         # Start gunicorn in the background using Waiter's configuration
-        cmd = "cd waiter && nohup gunicorn --bind 0.0.0.0:${PORT:-5050} webhook:app > /dev/null 2>&1 &"
+        cmd = "cd /opt/acadex/waiter && nohup gunicorn --bind 0.0.0.0:${PORT:-5050} webhook:app > /dev/null 2>&1 &"
         subprocess.run(cmd, executable='/bin/bash', shell=True, check=True)
         print("Waiter started successfully.")
     except Exception as e:
@@ -147,6 +147,9 @@ def uninstall():
 
     print("Removing /var/acadex configuration files...")
     subprocess.run(["sudo", "rm", "-rf", "/var/acadex"])
+    
+    print("Removing /opt/acadex/waiter daemon logs and scripts...")
+    subprocess.run(["sudo", "rm", "-rf", "/opt/acadex"])
     
     print("Removing acadex CLI...")
     subprocess.run(["sudo", "rm", "-f", "/usr/local/bin/acadex"])
