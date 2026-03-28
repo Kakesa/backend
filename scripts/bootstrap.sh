@@ -31,10 +31,11 @@ apt-get install -y git curl wget jq apt-transport-https software-properties-comm
 
 echo_b "Installing Python 3 and Pip..."
 apt-get install -y python3 python3-pip python3-venv python3-dev
-# Install system-wide Python packages that Waiter uses
-pip3 install --upgrade pip
+# Install system-wide Python packages that Waiter uses (overriding PEP 668 managed env protection for dedicated server boots)
+export PIP_BREAK_SYSTEM_PACKAGES=1
+pip3 install --upgrade pip --break-system-packages || pip3 install --upgrade pip
 # Ensure waiter requirements are met
-pip3 install flask gunicorn python-pam python-dotenv
+pip3 install flask gunicorn python-pam python-dotenv --break-system-packages || pip3 install flask gunicorn python-pam python-dotenv
 
 echo_b "Installing Docker..."
 if ! command -v docker &> /dev/null; then
