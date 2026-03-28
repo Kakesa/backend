@@ -38,12 +38,19 @@ def deploy(repo_url, branch="release"):
             # We use auth_repo_url but don't print it to keep secrets safe
             subprocess.run(["git", "clone", "-b", branch, "--single-branch", auth_repo_url, temp_dir], check=True)
             
+            # Copy configuration files to permanent storage for the acadex CLI
+            subprocess.run(["sudo", "mkdir", "-p", "/var/acadex"], check=True)
+            for f in ["k8s.yaml", "docker-compose.yml"]:
+                file_path = os.path.join(temp_dir, f)
+                if os.path.exists(file_path):
+                    subprocess.run(["sudo", "cp", file_path, "/var/acadex/"], check=True)
+
             if ORCHESTRATOR == "kubernetes":
                 # Build the image locally
                 subprocess.run(["docker", "build", "-t", "acadex-shadow:latest", "."], cwd=temp_dir, check=True)
                 
                 # Apply k8s manifests just in case they changed, then restart
-                subprocess.run(["kubectl", "apply", "-f", "k8s.yaml"], cwd=temp_dir, check=True)
+                subprocess.run(["kubectl", "apply", "-f", "/var/acadex/k8s.yaml"], cwd=temp_dir, check=True)
                 # Update the deployment in kubernetes
                 subprocess.run(["kubectl", "rollout", "restart", "deployment/shadow"], cwd=temp_dir, check=True)
                 print("Successfully rolled out kubernetes deployment.")
@@ -51,7 +58,7 @@ def deploy(repo_url, branch="release"):
             elif ORCHESTRATOR == "docker-compose":
                 # Docker Compose builds and recreates containers automatically
                 # Specify project name so it doesn't use the temporary folder name
-                subprocess.run(["docker", "compose", "-p", "acadex", "up", "-d", "--build"], cwd=temp_dir, check=True)
+                subprocess.run(["docker", "compose", "-p", "acadex", "-f", "/var/acadex/docker-compose.yml", "up", "-d", "--build"], cwd=temp_dir, check=True)
                 print("Successfully updated docker-compose services.")
                 
             else:

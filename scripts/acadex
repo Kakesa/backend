@@ -23,10 +23,10 @@ def kill():
     print(f"Stopping containers using {orch}...")
     
     if orch == "docker-compose":
-        subprocess.run(["docker", "compose", "down"])
+        subprocess.run(["docker", "compose", "-p", "acadex", "-f", "/var/acadex/docker-compose.yml", "down"])
     elif orch == "kubernetes":
         # Simplified removal
-        subprocess.run(["kubectl", "delete", "-f", "k8s.yaml"])
+        subprocess.run(["kubectl", "delete", "-f", "/var/acadex/k8s.yaml"])
     else:
         print(f"Unknown orchestrator: {orch}")
         sys.exit(1)
@@ -44,9 +44,9 @@ def start():
     print(f"Starting containers using {orch}...")
     
     if orch == "docker-compose":
-        subprocess.run(["docker", "compose", "up", "-d"])
+        subprocess.run(["docker", "compose", "-p", "acadex", "-f", "/var/acadex/docker-compose.yml", "up", "-d"])
     elif orch == "kubernetes":
-        subprocess.run(["kubectl", "apply", "-f", "k8s.yaml"])
+        subprocess.run(["kubectl", "apply", "-f", "/var/acadex/k8s.yaml"])
     else:
         print(f"Unknown orchestrator: {orch}")
         sys.exit(1)
@@ -89,13 +89,79 @@ tunnels:
     finally:
         os.remove(config_path)
 
+def status():
+    """Shows the status of all Acadex services."""
+    orch = get_orchestrator()
+    print("==========================================")
+    print(f" Orchestrator Status ({orch.upper()})")
+    print("==========================================")
+    
+    if orch == "docker-compose":
+        subprocess.run(["docker", "compose", "-p", "acadex", "-f", "/var/acadex/docker-compose.yml", "ps"])
+    elif orch == "kubernetes":
+        subprocess.run(["kubectl", "get", "deployments,pods,services"])
+    else:
+        print(f"Unknown orchestrator: {orch}")
+        
+    print("\n==========================================")
+    print(" Waiter Daemon Status")
+    print("==========================================")
+    try:
+        waiter_pids = subprocess.check_output(["pgrep", "-f", "gunicorn.*webhook:app"]).decode().strip().split('\n')
+        if waiter_pids and waiter_pids[0]:
+            print(f"✅ Waiter is RUNNING (PIDs: {', '.join(waiter_pids)})")
+        else:
+            print("❌ Waiter is STOPPED")
+    except subprocess.CalledProcessError:
+        print("❌ Waiter is STOPPED")
+
+    print("\n==========================================")
+    print(" Tunnel Status (ngrok)")
+    print("==========================================")
+    try:
+        ngrok_pids = subprocess.check_output(["pgrep", "-x", "ngrok"]).decode().strip().split('\n')
+        if ngrok_pids and ngrok_pids[0]:
+            print(f"✅ Ngrok is RUNNING (PIDs: {', '.join(ngrok_pids)})")
+        else:
+            print("❌ Ngrok tunnel is STOPPED")
+    except subprocess.CalledProcessError:
+        print("❌ Ngrok tunnel is STOPPED")
+    print()
+
+def uninstall():
+    """Uninstalls Acadex and removes configuration files."""
+    if not confirm("Are you sure you want to completely uninstall Acadex and remove its files?"):
+        print("Aborted.")
+        sys.exit(0)
+    
+    # First, try to kill processes
+    orch = get_orchestrator()
+    print(f"Stopping containers using {orch}...")
+    if orch == "docker-compose":
+        subprocess.run(["docker", "compose", "-p", "acadex", "-f", "/var/acadex/docker-compose.yml", "down"], check=False)
+    elif orch == "kubernetes":
+        subprocess.run(["kubectl", "delete", "-f", "/var/acadex/k8s.yaml"], check=False)
+        
+    print("Stopping Waiter daemon...")
+    subprocess.run(["pkill", "-f", "gunicorn.*webhook:app"], check=False)
+
+    print("Removing /var/acadex configuration files...")
+    subprocess.run(["sudo", "rm", "-rf", "/var/acadex"])
+    
+    print("Removing acadex CLI...")
+    subprocess.run(["sudo", "rm", "-f", "/usr/local/bin/acadex"])
+    
+    print("Uninstallation complete.")
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: scripts/acadex <command>")
         print("\nCommands:")
-        print("  start  - Starts all containers using the defined orchestrator")
-        print("  kill   - Stops all containers (requires confirmation)")
-        print("  tunnel - Launches ngrok to tunnel shadow and waiter")
+        print("  start     - Starts all containers using the defined orchestrator")
+        print("  kill      - Stops all containers (requires confirmation)")
+        print("  tunnel    - Launches ngrok to tunnel shadow and waiter")
+        print("  status    - Shows the running status of containers, waiter, and tunnels")
+        print("  uninstall - Removes all running containers and deletes Acadex configuration files")
         sys.exit(1)
         
     cmd = sys.argv[1].lower()
@@ -106,6 +172,10 @@ def main():
         kill()
     elif cmd == "tunnel":
         tunnel()
+    elif cmd == "status":
+        status()
+    elif cmd == "uninstall":
+        uninstall()
     else:
         print(f"Unknown command: {cmd}")
         sys.exit(1)

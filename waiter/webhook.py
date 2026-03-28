@@ -204,11 +204,11 @@ def restart_containers():
     print(f"Restarting containers using {ORCHESTRATOR} based on config change...")
     try:
         if ORCHESTRATOR == "docker-compose":
-            subprocess.run(["docker", "compose", "down"], cwd=PROJECT_ROOT, check=True)
-            subprocess.run(["docker", "compose", "up", "-d"], cwd=PROJECT_ROOT, check=True)
+            subprocess.run(["docker", "compose", "-p", "acadex", "-f", "/var/acadex/docker-compose.yml", "down"], check=True)
+            subprocess.run(["docker", "compose", "-p", "acadex", "-f", "/var/acadex/docker-compose.yml", "up", "-d"], check=True)
         elif ORCHESTRATOR == "kubernetes":
-            subprocess.run(["kubectl", "apply", "-f", "k8s.yaml"], cwd=PROJECT_ROOT, check=True)
-            subprocess.run(["kubectl", "rollout", "restart", "deployment/shadow"], cwd=PROJECT_ROOT, check=True)
+            subprocess.run(["kubectl", "apply", "-f", "/var/acadex/k8s.yaml"], check=True)
+            subprocess.run(["kubectl", "rollout", "restart", "deployment/shadow"], check=True)
     except Exception as e:
         print(f"Restart failed: {e}")
 
