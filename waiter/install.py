@@ -85,18 +85,6 @@ def main():
         
     repo_url = os.getenv("ACADEX_REPO_URL")
     
-    if os.getenv("ACADEX_ORCHESTRATOR", "docker-compose").lower() == "kubernetes":
-        print("Ensuring Minikube is started...")
-        try:
-            subprocess.run(["minikube", "status"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            print("Starting Minikube (this may take a few minutes)...")
-            try:
-                subprocess.run(["minikube", "start"], check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"Failed to start Minikube: {e}")
-                sys.exit(1)
-
     success = deploy(repo_url)
     install_ngrok()
 

@@ -86,9 +86,22 @@ if ! command -v minikube &> /dev/null; then
     curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
     chmod +x minikube
     install minikube /usr/local/bin/
-    rm minikube
+    rm -f minikube
 else
     echo "Minikube is already installed."
+fi
+
+# Ensure conntrack is installed as minikube requires it for some drivers
+apt-get install -y conntrack
+
+echo_b "Initializing Minikube environment..."
+# Start minikube as the normal user if possible to avoid root/docker driver conflicts
+if [ -n "$SUDO_USER" ]; then
+    echo "Starting minikube as $SUDO_USER..."
+    sudo -u $SUDO_USER minikube start --force
+else
+    echo "Starting minikube as root (forcing)..."
+    minikube start --force
 fi
 
 echo_b "Installing ngrok..."
