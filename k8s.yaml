@@ -69,6 +69,8 @@ spec:
         ports:
         - containerPort: 5000
         env:
+        - name: PORT
+          value: "5000" # Maps to SHADOW_PORT natively via Kustomize or Env var injection mechanisms
         - name: NODE_ENV
           value: "production"
         - name: MONGO_URI

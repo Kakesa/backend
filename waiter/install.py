@@ -56,6 +56,15 @@ def main():
     success = deploy(repo_url)
     install_ngrok()
 
+    # Move acadex script to a system path
+    print("Installing the 'acadex' CLI to /usr/local/bin...")
+    try:
+        subprocess.run(["sudo", "cp", "scripts/acadex", "/usr/local/bin/acadex"], check=True)
+        subprocess.run(["sudo", "chmod", "+x", "/usr/local/bin/acadex"], check=True)
+        print("'acadex' CLI installed globally. You can now type 'acadex' from anywhere.")
+    except Exception as e:
+        print(f"Warning: Failed to install 'acadex' globally, you might need to run the installer with sudo, or copy it manually. Error: {e}")
+
     if success:
         print("\n" + "="*60)
         print("🎉 Installation complete! The Acadex suite is now running.")
@@ -64,10 +73,10 @@ def main():
         print("Run the following command to link your account:")
         print("   ngrok config add-authtoken <YOUR_NGROK_TOKEN>")
         print("\nOnce configured, you can expose your applications by navigating to the repo and running:")
-        print("   ./scripts/acadex tunnel")
+        print("   acadex tunnel")
         print("\nOther available commands:")
-        print("   ./scripts/acadex kill   # Stops all services securely")
-        print("   ./scripts/acadex start  # Boots all services back up")
+        print("   acadex kill   # Stops all services securely")
+        print("   acadex start  # Boots all services back up")
         sys.exit(0)
     else:
         print("\nInstallation failed. Please review the error logs above.")

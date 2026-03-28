@@ -14,8 +14,8 @@ def confirm(prompt):
     return resp in ('y', 'yes')
 
 def kill():
-    """Stops all application containers/resources."""
-    if not confirm("Are you sure you want to stop all Acadex containers?"):
+    """Stops all application containers/resources and the waiter daemon."""
+    if not confirm("Are you sure you want to stop all Acadex containers and the Waiter service?"):
         print("Aborted.")
         sys.exit(0)
     
@@ -30,9 +30,16 @@ def kill():
     else:
         print(f"Unknown orchestrator: {orch}")
         sys.exit(1)
+        
+    print("Stopping Waiter daemon...")
+    try:
+        subprocess.run(["pkill", "-f", "gunicorn.*webhook:app"])
+        print("Waiter stopped.")
+    except Exception:
+        print("Waiter was not running.")
 
 def start():
-    """Starts the application containers."""
+    """Starts the application containers and the waiter daemon."""
     orch = get_orchestrator()
     print(f"Starting containers using {orch}...")
     
@@ -43,6 +50,15 @@ def start():
     else:
         print(f"Unknown orchestrator: {orch}")
         sys.exit(1)
+        
+    print("Starting Waiter Webhook listener locally (daemon mode)...")
+    try:
+        # Start gunicorn in the background using Waiter's configuration
+        cmd = "cd waiter && nohup gunicorn --bind 0.0.0.0:${PORT:-5050} webhook:app > /dev/null 2>&1 &"
+        subprocess.run(cmd, executable='/bin/bash', shell=True, check=True)
+        print("Waiter started successfully.")
+    except Exception as e:
+        print(f"Failed to start waiter: {e}")
 
 def tunnel():
     """Launches ngrok to expose both shadow and waiter endpoints securely."""
